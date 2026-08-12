@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <title>MMC 熱帶氣旋預報GIS（測試版）</title>
+    <title>HKMO_MET TC-GIS（測試版）</title>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <link href="https://unpkg.com/leaflet/dist/leaflet.css" rel="stylesheet"/>
@@ -91,7 +91,7 @@
             font-size: 13px;
             font-weight: 500;
             color: #2c3e50;
-            min-width: 150px;
+            min-width: 170px;
             line-height: 1.6;
             border: 1px solid #ddd;
         }
@@ -110,14 +110,14 @@
             .professional-legend { width: calc(100% - 40px); left: 10px; right: 10px; bottom: 15px; padding: 10px; max-height: 180px; overflow-y: auto; }
             .legend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 10px; }
             .legend-title { font-size: 12px; grid-column: span 2; margin-top: 5px; }
-            #distance-panel { top: 140px; font-size: 12px; min-width: 130px; padding: 8px 10px; }
+            #distance-panel { top: 140px; font-size: 12px; min-width: 140px; padding: 8px 10px; }
         }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <div><b>🌀 MMC TC-GIS（測試版）</b></div>
+    <div><b>🌀 HKMO_MET TC-GIS（測試版）</b></div>
     <div style="display: flex; align-items: center;">
         <select id="tc-selector" onchange="init()">
             <option value="all" selected>所有熱帶氣旋</option>
@@ -140,7 +140,7 @@
 </select>
 
 <div id="distance-panel">
-    <strong>距離澳門</strong>
+    <strong>距離港澳</strong>
     無資料
 </div>
 
@@ -195,7 +195,7 @@
 // 代號清單直接為字母
 const TC_LIST = ['G'];
 
-// 用於距離面板顯示名稱（已移除字母標註）
+// 用於距離面板顯示名稱
 const TC_DISPLAY_NAMES = {
     'G': '浪卡'
 };
@@ -220,7 +220,7 @@ function changeMapType(type) {
 const intensityColors = { "LPA": "#dcdcdc", "EX": "#dcdcdc", "TD": "#eee8aa", "TS": "#3498db", "STS": "#2ecc71", "TY": "#ffa200f6", "STY": "#ff0000", "SUTY": "#9b59b6", "default": "#666" };
 const intensityNames = { "LPA": "低壓區", "TD": "熱帶低氣壓", "TS": "熱帶風暴", "STS": "強烈熱帶風暴", "TY": "颱風", "STY": "強颱風", "SUTY": "超強颱風", "EX": "溫帶氣旋" };
 const MACAO_COORDS = [22.17, 113.55]; 
-const ALERT_CIRCLES = [ { r: 100, color: "#A0A0A0", opacity: 0.3 }, { r: 200, color: "#808080", opacity: 0.4 }, { r: 400, color: "#808080", opacity: 0.5 }, { r: 600, color: "#A0A0A0", opacity: 0.6 }, { r: 800, color: "#FF4D4D", opacity: 0.7 } ];
+const HK_COORDS = [22.3193, 114.1694]; 
 
 var map = L.map('mapid', { zoomControl: false }).setView([18.0, 135.0], 5);
 L.control.zoom({ position: 'topleft' }).addTo(map);
@@ -294,36 +294,66 @@ function createPopupContent(data, type, baseTimeStr = null) {
     let header = type === 'current' ? ' 實時位置 ' : (type === 'forecast' ? ' 預報位置' : ' 過去位置');
     let timeLabel = (type === 'past' || type === 'current') ? `時間: ${timeValue}` : `預報時間: ${calculateForecastTime(baseTimeStr, data.f_time)}`;
     
-    let distanceStr = '--';
+    let distanceStrMacau = '--';
+    let distanceStrHK = '--';
     if (typeof data.lat === 'number' && typeof data.lng === 'number') {
-        const dist = turf.distance(turf.point([data.lng, data.lat]), turf.point([MACAO_COORDS[1], MACAO_COORDS[0]]), { units: 'kilometers' });
-        distanceStr = dist.toFixed(1) + ' 公里';
+        const pt = turf.point([data.lng, data.lat]);
+        const distM = turf.distance(pt, turf.point([MACAO_COORDS[1], MACAO_COORDS[0]]), { units: 'kilometers' });
+        const distH = turf.distance(pt, turf.point([HK_COORDS[1], HK_COORDS[0]]), { units: 'kilometers' });
+        distanceStrMacau = distM.toFixed(1) + ' 公里';
+        distanceStrHK = distH.toFixed(1) + ' 公里';
     }
 
     return `<div class="popup-title">${header}</div>
             <div class="popup-item"> ${timeLabel}</div>
             <div class="popup-item"> 位置: ${data.lat.toFixed(1)}°N, ${data.lng.toFixed(1)}°E</div>
-            <div class="popup-item"> 距離澳門: ${distanceStr}</div>
+            <div class="popup-item"> 距離澳門: ${distanceStrMacau}</div>
+            <div class="popup-item"> 距離香港: ${distanceStrHK}</div>
             <div class="popup-item"> 強度: ${intensityNames[data.intensity] || data.intensity}</div>
             <div class="popup-item"> 近中心最大風速: ${data.wind || '--'} kph</div>
             <div class="popup-item"> 中心氣壓: ${data['minimum central pressure'] || '--'} hPa</div>`;
 }
 
 function drawAlertCircles(layer) {
-    const center = turf.point([MACAO_COORDS[1], MACAO_COORDS[0]]);
-    fetch('https://nominatim.openstreetmap.org/search?q=Macau&format=geojson&polygon_geojson=1&limit=1')
+    // 1. 香港行政區劃邊界 (阿里 DataV API - 810000)
+    fetch('https://geo.datav.aliyun.com/areas_v3/bound/810000.json')
         .then(res => res.json())
         .then(data => {
-            if (data && data.features && data.features.length > 0) {
-                L.geoJSON(data.features[0].geometry, { style: { color: 'red', weight: 2, fillOpacity: 0, opacity: 1 } }).addTo(layer);
-            }
-        }).catch(err => console.error("獲取澳門邊界失敗: ", err));
+            L.geoJSON(data, {
+                style: { color: "red", weight: 2, fillOpacity: 0 }
+            }).addTo(layer);
+        })
+        .catch(err => console.error("加載阿里香港邊界失敗:", err));
 
-    ALERT_CIRCLES.forEach(circle => {
-        L.geoJSON(turf.circle(center, circle.r, { units: 'kilometers' }), { style: { color: circle.color, weight: 1.2, fillColor: 'transparent', dashArray: '5, 8', opacity: circle.opacity } }).addTo(layer);
-        const labelPos = turf.destination(center, circle.r, 180, { units: 'kilometers' });
-        L.marker([labelPos.geometry.coordinates[1], labelPos.geometry.coordinates[0]], { icon: L.divIcon({ html: `<div style="color: ${circle.color}; font-weight: bold; font-size: 11px; white-space: nowrap; opacity: ${Math.min(1, circle.opacity + 0.3)}; text-shadow: 1px 1px 1px white;">${circle.r}km</div>`, className: 'circle-label', iconSize: [60, 20], iconAnchor: [30, -2] }) }).addTo(layer);
-    });
+    // 2. 澳門行政區劃邊界 (阿里 DataV API - 820000)
+    fetch('https://geo.datav.aliyun.com/areas_v3/bound/820000.json')
+        .then(res => res.json())
+        .then(data => {
+            L.geoJSON(data, {
+                style: { color: "#00a86b", weight: 2, fillOpacity: 0 }
+            }).addTo(layer);
+        })
+        .catch(err => console.error("加載阿里澳門邊界失敗:", err));
+
+    // 澳門位置標籤
+    L.marker([MACAO_COORDS[0], MACAO_COORDS[1]], { 
+        icon: L.divIcon({ 
+            html: `<div style="color: #00a86b; font-weight: bold; font-size: 12px; white-space: nowrap; text-shadow: 1px 1px 1px white;">澳門</div>`, 
+            className: 'circle-label', 
+            iconSize: [40, 20], 
+            iconAnchor: [20, 10] 
+        }) 
+    }).addTo(layer);
+
+    // 香港位置標籤
+    L.marker([HK_COORDS[0], HK_COORDS[1]], { 
+        icon: L.divIcon({ 
+            html: `<div style="color: red; font-weight: bold; font-size: 12px; white-space: nowrap; text-shadow: 1px 1px 1px white;">香港</div>`, 
+            className: 'circle-label', 
+            iconSize: [40, 20], 
+            iconAnchor: [20, 10] 
+        }) 
+    }).addTo(layer);
 }
 
 async function drawSingleTC(tcId) {
@@ -345,8 +375,10 @@ async function drawSingleTC(tcId) {
         const baseTimeStr = latestPoint.datetime;
         
         if (latestPoint.lat !== undefined && latestPoint.lng !== undefined) {
-            const dist = turf.distance(turf.point([latestPoint.lng, latestPoint.lat]), turf.point([MACAO_COORDS[1], MACAO_COORDS[0]]), { units: 'kilometers' });
-            tcDistances[tcId] = dist.toFixed(1);
+            const pt = turf.point([latestPoint.lng, latestPoint.lat]);
+            const distM = turf.distance(pt, turf.point([MACAO_COORDS[1], MACAO_COORDS[0]]), { units: 'kilometers' });
+            const distH = turf.distance(pt, turf.point([HK_COORDS[1], HK_COORDS[0]]), { units: 'kilometers' });
+            tcDistances[tcId] = { macau: distM.toFixed(1), hk: distH.toFixed(1) };
         } else {
             tcDistances[tcId] = null;
         }
@@ -393,7 +425,7 @@ async function drawSingleTC(tcId) {
 function updateDistancePanel(tcIds) {
     const panel = document.getElementById('distance-panel');
     if (!panel) return;
-    let html = '<strong>距離澳門</strong>';
+    let html = '<strong>距離港澳</strong>';
     if (!tcIds || tcIds.length === 0) {
         html += '無資料';
         panel.innerHTML = html;
@@ -404,7 +436,7 @@ function updateDistancePanel(tcIds) {
         const dist = tcDistances[id];
         if (dist !== undefined && dist !== null) {
             const displayName = TC_DISPLAY_NAMES[id] || id;
-            html += `${displayName}: ${dist} 公里<br>`;
+            html += `${displayName}:<br>澳門 ${dist.macau} 公里<br>香港 ${dist.hk} 公里<br>`;
             hasData = true;
         }
     });
@@ -417,8 +449,11 @@ async function init() {
     drawAlertCircles(trackLayer);
     const target = document.getElementById('tc-selector').value;
     
+    // 只有選擇單一熱帶氣旋時才顯示預報路徑圖按鈕，選「所有熱帶氣旋」時隱藏
     const forecastBtn = document.getElementById('forecast-btn');
-    if (forecastBtn) forecastBtn.style.display = 'inline-block';
+    if (forecastBtn) {
+        forecastBtn.style.display = (target === 'all') ? 'none' : 'inline-block';
+    }
 
     tcDistances = {};
     let allBounds = [];
