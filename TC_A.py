@@ -16,9 +16,11 @@ import tcmarkers
 
 
 
+
 # ==================== 1. 氣旋與 GitHub Pages 網址設定 ====================
 TC_ID = "A"
 TC_NAME = "未命名"
+
 
 
 
@@ -27,8 +29,10 @@ SITE_BASE_URL = "https://zax41006-bot.github.io/TC-Track"
 
 
 
+
 PAST_CSV_URL = f"{SITE_BASE_URL}/past_track_{TC_ID}.csv"
 FORE_CSV_URL = f"{SITE_BASE_URL}/forecast_track_{TC_ID}.csv"
+
 
 
 
@@ -37,14 +41,17 @@ OUTPUT_IMG = os.path.join(BASE_PATH, f"TC_forecast_{TC_ID}.png")
 
 
 
+
 plt.rcParams["font.family"] = ["Microsoft YaHei", "SimHei", "Microsoft JhengHei"]
 plt.rcParams["axes.unicode_minus"] = False
+
 
 
 
 # 港澳座標設定
 MACAO_LON, MACAO_LAT = 113.55, 22.17
 HK_LON, HK_LAT = 114.17, 22.32
+
 
 
 
@@ -57,6 +64,7 @@ def get_intensity_info(wind, cyc_type="tropical"):
     elif 118 <= wind <= 149: return "颱風", "#FFB74D", tcmarkers.HU
     elif 150 <= wind <= 184: return "強颱風", "#FF7043", tcmarkers.HU
     else: return "超強颱風", "#BA68C8", tcmarkers.HU
+
 
 
 
@@ -78,11 +86,13 @@ def draw_chart():
 
 
 
+
         fig, ax = plt.subplots(figsize=(12, 10), subplot_kw={'projection': ccrs.PlateCarree()})
         
         # 根據過去與預報經緯度動態或固定邊界
         lon_min, lon_max, lat_min, lat_max = 105.0, 122.5, 15.5, 30.5
         ax.set_extent([lon_min, lon_max, lat_min, lat_max], crs=ccrs.PlateCarree())
+
 
 
 
@@ -94,6 +104,7 @@ def draw_chart():
 
 
 
+
         gl = ax.gridlines(draw_labels=True, linewidth=0.4, color='#90A4AE', alpha=0.5, linestyle='--', zorder=1)
         gl.top_labels = gl.right_labels = False
         gl.xlocator = mticker.MultipleLocator(5)
@@ -101,9 +112,11 @@ def draw_chart():
 
 
 
+
         # ==================== 3. 標記澳門與香港位置 ====================
         ax.plot(MACAO_LON, MACAO_LAT, '*', color="#00897B", ms=8.0, mec='#004D40', mew=0.8, zorder=12)
         ax.plot(HK_LON, HK_LAT, '*', color="#E53935", ms=8.0, mec='#880E4F', mew=0.8, zorder=12)
+
 
 
 
@@ -124,6 +137,7 @@ def draw_chart():
 
 
 
+
         # 預報點 ICON（縮小至 ms=6.0，12hr 節點 ms=4.0）
         for d in forecast_data:
             _, ln, lt, wd, h, _, cyc = d
@@ -135,9 +149,11 @@ def draw_chart():
 
 
 
+
         # 現時位置 ICON（縮小至 ms=7.5）
         _, c_col, c_m = get_intensity_info(curr[3])
         ax.plot(curr[1], curr[2], marker=c_m, ms=7.5, color=c_col, mec='k', mew=0.8, zorder=10)
+
 
 
 
@@ -147,9 +163,11 @@ def draw_chart():
         fig.text(0.5, 0.91, f"預報時效：{max(f_hs)} 小時", ha='center', fontsize=13, color='#546E7A')
 
 
+
         # 計算距離，使用 Haversine 球面公式，與前端 turf.js 算法一致
         cyc_lon, cyc_lat = curr[1], curr[2]
         R = 6371.0  # 地球半徑 km
+
 
         def haversine(lon1, lat1, lon2, lat2):
             lon1, lat1, lon2, lat2 = map(np.radians, [lon1, lat1, lon2, lat2])
@@ -159,11 +177,13 @@ def draw_chart():
             c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1-a))
             return R * c
 
+
         dist_hk_km = haversine(cyc_lon, cyc_lat, HK_LON, HK_LAT)
         dist_macao_km = haversine(cyc_lon, cyc_lat, MACAO_LON, MACAO_LAT)
         # 捨入至最近10公里 → XX0
         dist_hk_rounded = round(dist_hk_km / 10) * 10
         dist_macao_rounded = round(dist_macao_km / 10) * 10
+
 
 
         info_txt = (f"現時位置資料\n時間：{curr[0]}\n強度：{get_intensity_info(curr[3])[0]}\n"
@@ -179,6 +199,7 @@ def draw_chart():
 
 
 
+
         # ==================== 6. 圖例整理 ====================
         leg_core_loc = [
             Line2D([0], [0], color="#2E7D32", lw=2.2, label='過去路徑'), 
@@ -188,22 +209,24 @@ def draw_chart():
             Line2D([0], [0], marker='*', color='w', markerfacecolor='#E53935', markeredgecolor='#880E4F', ms=8.5, label='香港')
         ]
         
-        leg_int = [Line2D([0], [0], marker=tcmarkers.HU, c=get_intensity_info(v)[1], label=get_intensity_info(v)[0], ms=4.0, mec='k', mew=0.5, ls='') for v in [30, 50, 75, 100, 130, 160, 200]]
+        # 強度圖例標記放大 ms=4.0 → ms=5.2
+        leg_int = [Line2D([0], [0], marker=tcmarkers.HU, c=get_intensity_info(v)[1], label=get_intensity_info(v)[0], ms=5.2, mec='k', mew=0.5, ls='') for v in [30, 50, 75, 100, 130, 160, 200]]
         
         leg_node = [
-            Line2D([0], [0], marker=tcmarkers.HU, color="#0288D1", ms=4.5, mec='#333', mew=0.5, ls='', label='24小時預報節點'), 
-            Line2D([0], [0], marker='x', color="#0288D1", ms=3.5, mew=0.8, ls='', label='12小時預報節點')
+            Line2D([0], [0], marker=tcmarkers.HU, color="#0288D1", ms=5.2, mec='#333', mew=0.5, ls='', label='24小時預報節點'), 
+            Line2D([0], [0], marker='x', color="#0288D1", ms=4.2, mew=0.8, ls='', label='12小時預報節點')
         ]
+
 
 
 
         leg_params = dict(loc='lower center', frameon=True, edgecolor='#CFD8DC', facecolor='white', framealpha=0.90)
 
+        # 圖例字體放大：8.5 → 9.5；8.0 → 9.0；8.5 →9.5
+        fig.legend(handles=leg_core_loc, ncol=5, bbox_to_anchor=(0.5, 0.13), fontsize=9.5, **leg_params)
+        fig.legend(handles=leg_int, ncol=7, bbox_to_anchor=(0.5, 0.08), fontsize=9.0, **leg_params)
+        fig.legend(handles=leg_node, ncol=2, bbox_to_anchor=(0.5, 0.04), fontsize=9.5, **leg_params)
 
-
-        fig.legend(handles=leg_core_loc, ncol=5, bbox_to_anchor=(0.5, 0.13), fontsize=8.5, **leg_params)
-        fig.legend(handles=leg_int, ncol=7, bbox_to_anchor=(0.5, 0.08), fontsize=8.0, **leg_params)
-        fig.legend(handles=leg_node, ncol=2, bbox_to_anchor=(0.5, 0.04), fontsize=8.5, **leg_params)
 
 
 
@@ -215,8 +238,10 @@ def draw_chart():
 
 
 
+
     except Exception as e: 
         print(f"[{time.strftime('%H:%M:%S')}] × 讀取或繪圖失敗: {e}")
+
 
 
 
