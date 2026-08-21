@@ -373,13 +373,14 @@ async function drawSingleTC(tcId) {
         }
 
         const latestPoint = pastData[pastData.length - 1];
-        const baseTimeStr = latestPoint.datetime;
+        const baseTimeStr = latestPoint.datetime || latestPoint.time || '未知時間';
         
         if (latestPoint.lat !== undefined && latestPoint.lng !== undefined) {
             const pt = turf.point([latestPoint.lng, latestPoint.lat]);
             const distM = turf.distance(pt, turf.point([MACAO_COORDS[1], MACAO_COORDS[0]]), { units: 'kilometers' });
             const distH = turf.distance(pt, turf.point([HK_COORDS[1], HK_COORDS[0]]), { units: 'kilometers' });
-            tcDistances[tcId] = { macau: distM.toFixed(1), hk: distH.toFixed(1) };
+            // 更新：在這裡將實時時間 (baseTimeStr) 存入 tcDistances 中供面板使用
+            tcDistances[tcId] = { macau: distM.toFixed(1), hk: distH.toFixed(1), time: baseTimeStr };
         } else {
             tcDistances[tcId] = null;
         }
@@ -437,7 +438,8 @@ function updateDistancePanel(tcIds) {
         const dist = tcDistances[id];
         if (dist !== undefined && dist !== null) {
             const displayName = TC_DISPLAY_NAMES[id] || id;
-            html += `${displayName}:<br>澳門 ${dist.macau} 公里<br>香港 ${dist.hk} 公里<br>`;
+            // 更新：在這裡將氣旋的名字旁邊加上時間 (dist.time)，並套用些微的樣式讓它美觀
+            html += `${displayName} <span style="font-size: 11px; font-weight: normal; color: #555;">(${dist.time})</span>:<br>澳門 ${dist.macau} 公里<br>香港 ${dist.hk} 公里<br>`;
             hasData = true;
         }
     });
