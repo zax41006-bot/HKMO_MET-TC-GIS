@@ -43,16 +43,20 @@
         #mapid { position: absolute; top: 50px; left: 0; bottom: 0; right: 0; background: #aad3df; }
         .leaflet-top.leaflet-left { top: 60px; }
 
+        /* 下側雙排圖例 CSS */
         .professional-legend {
-            position: absolute; bottom: 20px; right: 10px;
-            background: var(--panel-bg); padding: 12px; border-radius: 8px;
-            z-index: 1000; box-shadow: 0 2px 15px rgba(0,0,0,0.15); border: 1px solid #ddd; width: 210px;
+            position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
+            background: var(--panel-bg); padding: 8px 16px; border-radius: 8px;
+            z-index: 1000; box-shadow: 0 2px 15px rgba(0,0,0,0.15); border: 1px solid #ddd;
+            max-width: calc(100% - 20px); box-sizing: border-box; overflow-x: auto;
         }
-        .legend-title { font-weight: bold; border-bottom: 2px solid #eee; margin-bottom: 8px; padding-bottom: 4px; font-size: 13px; color: #333; }
-        .legend-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-size: 11px; }
-        .dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid #444; flex-shrink: 0; }
-        .line { width: 25px; height: 3px; flex-shrink: 0; }
-        .box { width: 14px; height: 14px; border: 1px dashed #e67e22; background: rgba(241,196,15,0.15); flex-shrink: 0; }
+        .legend-container { display: flex; flex-direction: column; gap: 6px; }
+        .legend-section { display: flex; align-items: center; flex-wrap: nowrap; gap: 7px; font-size: 11px; white-space: nowrap; }
+        .legend-title-inline { font-weight: bold; color: #333; font-size: 12px; margin-right: 2px; white-space: nowrap; border-right: 2px solid #ddd; padding-right: 6px; }
+        .legend-row { display: flex; align-items: center; gap: 4px; font-size: 11px; white-space: nowrap; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #444; flex-shrink: 0; }
+        .line { width: 22px; height: 3px; flex-shrink: 0; }
+        .box { width: 12px; height: 12px; border: 1px dashed #e67e22; background: rgba(241,196,15,0.15); flex-shrink: 0; }
 
         #img-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -107,9 +111,8 @@
         @media screen and (max-width: 768px) {
             .header b { font-size: 13px; }
             .radar-ui { bottom: 220px; width: 240px; padding: 10px; }
-            .professional-legend { width: calc(100% - 40px); left: 10px; right: 10px; bottom: 15px; padding: 10px; max-height: 180px; overflow-y: auto; }
-            .legend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 10px; }
-            .legend-title { font-size: 12px; grid-column: span 2; margin-top: 5px; }
+            .professional-legend { width: calc(100% - 20px); bottom: 10px; padding: 6px 10px; max-height: 150px; }
+            .legend-section { gap: 5px; }
             #distance-panel { top: 140px; font-size: 12px; min-width: 140px; padding: 8px 10px; }
         }
     </style>
@@ -121,8 +124,8 @@
     <div style="display: flex; align-items: center;">
         <select id="tc-selector" onchange="init()">
             <option value="all" selected>所有熱帶氣旋</option>
-            <option value="A">潛在熱帶氣旋</option>
-            <option value="B">熱帶低氣壓17W</option>
+            <option value="A">熱帶低氣壓</option>
+            <option value="B">沙德爾</option>
         </select>
     </div>
 </div>
@@ -172,21 +175,27 @@
 </div>
 
 <div class="professional-legend">
-    <div class="legend-grid">
-        <div class="legend-title">路徑圖例</div>
-        <div class="legend-row"><div class="dot" style="background:#fff; border: 2.5px solid #000; width:12px; height:12px;"></div> <b>實時位置</b></div>
-        <div class="legend-row"><div class="line" style="background: #32CD32;"></div> 過去路徑</div>
-        <div class="legend-row"><div class="line" style="border-top: 3px dashed #3498db;"></div> 預報路徑</div>
-        <div class="legend-row"><div class="box"></div> 70% 誤差帶</div>
-        
-        <div class="legend-title">強度等級</div>
-        <div class="legend-row"><div class="dot" style="background:#dcdcdc;"></div> LPA 低壓區</div>
-        <div class="legend-row"><div class="dot" style="background:#eee8aa;"></div> TD 熱帶低氣壓</div>
-        <div class="legend-row"><div class="dot" style="background:#3498db;"></div> TS 熱帶風暴</div>
-        <div class="legend-row"><div class="dot" style="background:#2ecc71;"></div> STS 強烈熱帶風暴</div>
-        <div class="legend-row"><div class="dot" style="background:#ffa200f6;"></div> TY 颱風</div>
-        <div class="legend-row"><div class="dot" style="background:#ff0000;"></div> STY 強颱風</div>
-        <div class="legend-row"><div class="dot" style="background:#9b59b6;"></div> SUTY 超強颱風</div>
+    <div class="legend-container">
+        <!-- 第一排：路徑圖例 -->
+        <div class="legend-section">
+            <span class="legend-title-inline">路徑圖例</span>
+            <div class="legend-row"><div class="dot" style="background:#fff; border: 2.5px solid #000; width:10px; height:10px;"></div> <b>實時位置</b></div>
+            <div class="legend-row"><div class="line" style="background: #32CD32;"></div> 過去路徑</div>
+            <div class="legend-row"><div class="line" style="border-top: 3px dashed #3498db;"></div> 預報路徑</div>
+            <div class="legend-row"><div class="box"></div> 70% 誤差帶</div>
+        </div>
+        <!-- 第二排：強度等級 -->
+        <div class="legend-section">
+            <span class="legend-title-inline">強度等級</span>
+            <div class="legend-row"><div class="dot" style="background:#dcdcdc;"></div> LPA 低壓區</div>
+            <div class="legend-row"><div class="dot" style="background:#eee8aa;"></div> TD 熱帶低氣壓</div>
+            <div class="legend-row"><div class="dot" style="background:#3498db;"></div> TS 熱帶風暴</div>
+            <div class="legend-row"><div class="dot" style="background:#2ecc71;"></div> STS 強烈熱帶風暴</div>
+            <div class="legend-row"><div class="dot" style="background:#ffa200f6;"></div> TY 颱風</div>
+            <div class="legend-row"><div class="dot" style="background:#ff0000;"></div> STY 強颱風</div>
+            <div class="legend-row"><div class="dot" style="background:#9b59b6;"></div> SUTY 超強颱風</div>
+            <div class="legend-row"><div class="dot" style="background:#707070;"></div> EX 溫帶氣旋</div>
+        </div>
     </div>
 </div>
 
@@ -198,7 +207,7 @@ const TC_LIST = ['A','B'];
 // 用於距離面板顯示名稱
 const TC_DISPLAY_NAMES = {
     'A': '95W',
-    'B': '17W'
+    'B': '沙德爾'
 };
 
 const baseLayers = {
@@ -218,7 +227,7 @@ function changeMapType(type) {
     baseLayers[type].addTo(map);
 }
 
-const intensityColors = { "LPA": "#dcdcdc", "EX": "#dcdcdc", "TD": "#eee8aa", "TS": "#3498db", "STS": "#2ecc71", "TY": "#ffa200f6", "STY": "#ff0000", "SUTY": "#9b59b6", "default": "#666" };
+const intensityColors = { "LPA": "#dcdcdc", "EX": "#707070", "TD": "#eee8aa", "TS": "#3498db", "STS": "#2ecc71", "TY": "#ffa200f6", "STY": "#ff0000", "SUTY": "#9b59b6", "default": "#666" };
 const intensityNames = { "LPA": "低壓區", "TD": "熱帶低氣壓", "TS": "熱帶風暴", "STS": "強烈熱帶風暴", "TY": "颱風", "STY": "強颱風", "SUTY": "超強颱風", "EX": "溫帶氣旋" };
 const MACAO_COORDS = [22.17, 113.55]; 
 const HK_COORDS = [22.3193, 114.1694]; 
@@ -316,7 +325,6 @@ function createPopupContent(data, type, baseTimeStr = null) {
 }
 
 function drawAlertCircles(layer) {
-    // 1. 香港行政區劃邊界 (阿里 DataV API - 810000)
     fetch('https://geo.datav.aliyun.com/areas_v3/bound/810000.json')
         .then(res => res.json())
         .then(data => {
@@ -326,7 +334,6 @@ function drawAlertCircles(layer) {
         })
         .catch(err => console.error("加載阿里香港邊界失敗:", err));
 
-    // 2. 澳門行政區劃邊界 (阿里 DataV API - 820000)
     fetch('https://geo.datav.aliyun.com/areas_v3/bound/820000.json')
         .then(res => res.json())
         .then(data => {
@@ -336,7 +343,6 @@ function drawAlertCircles(layer) {
         })
         .catch(err => console.error("加載阿里澳門邊界失敗:", err));
 
-    // 澳門位置標籤
     L.marker([MACAO_COORDS[0], MACAO_COORDS[1]], { 
         icon: L.divIcon({ 
             html: `<div style="color: #00a86b; font-weight: bold; font-size: 12px; white-space: nowrap; text-shadow: 1px 1px 1px white;">澳門</div>`, 
@@ -346,7 +352,6 @@ function drawAlertCircles(layer) {
         }) 
     }).addTo(layer);
 
-    // 香港位置標籤
     L.marker([HK_COORDS[0], HK_COORDS[1]], { 
         icon: L.divIcon({ 
             html: `<div style="color: red; font-weight: bold; font-size: 12px; white-space: nowrap; text-shadow: 1px 1px 1px white;">香港</div>`, 
@@ -379,7 +384,6 @@ async function drawSingleTC(tcId) {
             const pt = turf.point([latestPoint.lng, latestPoint.lat]);
             const distM = turf.distance(pt, turf.point([MACAO_COORDS[1], MACAO_COORDS[0]]), { units: 'kilometers' });
             const distH = turf.distance(pt, turf.point([HK_COORDS[1], HK_COORDS[0]]), { units: 'kilometers' });
-            // 更新：在這裡將實時時間 (baseTimeStr) 存入 tcDistances 中供面板使用
             tcDistances[tcId] = { macau: distM.toFixed(1), hk: distH.toFixed(1), time: baseTimeStr };
         } else {
             tcDistances[tcId] = null;
@@ -438,7 +442,6 @@ function updateDistancePanel(tcIds) {
         const dist = tcDistances[id];
         if (dist !== undefined && dist !== null) {
             const displayName = TC_DISPLAY_NAMES[id] || id;
-            // 更新：在這裡將氣旋的名字旁邊加上時間 (dist.time)，並套用些微的樣式讓它美觀
             html += `${displayName} <span style="font-size: 11px; font-weight: normal; color: #555;">(${dist.time})</span>:<br>澳門 ${dist.macau} 公里<br>香港 ${dist.hk} 公里<br>`;
             hasData = true;
         }
@@ -452,7 +455,6 @@ async function init() {
     drawAlertCircles(trackLayer);
     const target = document.getElementById('tc-selector').value;
     
-    // 只有選擇單一熱帶氣旋時才顯示預報路徑圖按鈕，選「所有熱帶氣旋」時隱藏
     const forecastBtn = document.getElementById('forecast-btn');
     if (forecastBtn) {
         forecastBtn.style.display = (target === 'all') ? 'none' : 'inline-block';
