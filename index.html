@@ -43,7 +43,7 @@
         #mapid { position: absolute; top: 50px; left: 0; bottom: 0; right: 0; background: #aad3df; }
         .leaflet-top.leaflet-left { top: 60px; }
 
-        /* 下側雙排圖例 CSS */
+        /* 電腦版：下側雙排圖例【完全保留原本樣式不變】 */
         .professional-legend {
             position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
             background: var(--panel-bg); padding: 8px 16px; border-radius: 8px;
@@ -108,11 +108,40 @@
             color: #2c3e50;
         }
 
+        /* ========== 手機版：圖例移右下角 ========== */
         @media screen and (max-width: 768px) {
             .header b { font-size: 13px; }
             .radar-ui { bottom: 220px; width: 240px; padding: 10px; }
-            .professional-legend { width: calc(100% - 20px); bottom: 10px; padding: 6px 10px; max-height: 150px; }
-            .legend-section { gap: 5px; }
+
+            .professional-legend {
+                left: auto !important;
+                right: 10px !important;
+                bottom: 10px !important;
+                transform: none !important;
+                width: auto !important;
+                max-width: 45vw !important;
+                padding: 6px 8px;
+                max-height: unset;
+                overflow-x: unset;
+            }
+            .legend-container {
+                gap: 8px !important;
+            }
+            .legend-section {
+                flex-direction: column;
+                align-items: flex-start;
+                gap:4px !important;
+                white-space: normal;
+            }
+            .legend-title-inline {
+                border-right: none;
+                padding-right: 0;
+                margin-bottom:2px;
+            }
+            .legend-row {
+                font-size:9px;
+            }
+
             #distance-panel { top: 140px; font-size: 12px; min-width: 140px; padding: 8px 10px; }
         }
     </style>
@@ -223,7 +252,9 @@ const baseLayers = {
 };
 
 function changeMapType(type) {
-    Object.values(baseLayers).forEach(layer => map.removeLayer(layer));
+    map.eachLayer(layer => {
+        if(Object.values(baseLayers).includes(layer)) map.removeLayer(layer);
+    })
     baseLayers[type].addTo(map);
 }
 
@@ -271,18 +302,18 @@ function parseCSV(text) {
 
 function getSegmentSector(p1, r1, p2, r2) {
     const bearing = turf.bearing(p1, p2);
-    const p1_l = turf.destination(p1, r1, bearing - 90, {units: 'kilometers'});
-    const p1_r = turf.destination(p1, r1, bearing + 90, {units: 'kilometers'});
-    const p2_l = turf.destination(p2, r2, bearing - 90, {units: 'kilometers'});
-    const p2_r = turf.destination(p2, r2, bearing + 90, {units: 'kilometers'});
+    const p1_l = turf.destination(p1, r1, bearing - 90, {units:'kilometers'});
+    const p1_r = turf.destination(p1, r1, bearing + 90, {units:'kilometers'});
+    const p2_l = turf.destination(p2, r2, bearing - 90, {units:'kilometers'});
+    const p2_r = turf.destination(p2, r2, bearing + 90, {units:'kilometers'});
     return turf.polygon([[p1_l.geometry.coordinates, p2_l.geometry.coordinates, p2_r.geometry.coordinates, p1_r.geometry.coordinates, p1_l.geometry.coordinates]]);
 }
 
 function getSmoothLine(points, options = {}) {
     if (points.length < 3) return L.polyline(points, options);
-    const turfLine = turf.lineString(points.map(p => [p[1], p[0]]));
-    const curved = turf.bezierSpline(turfLine, { resolution: 5000, sharpness: 0.85 });
-    return L.geoJSON(curved, { style: options });
+    const turfLine = turf.lineString(points.map(p=>[p[1],p[0]]));
+    const curved = turf.bezierSpline(turfLine, { resolution:5000, sharpness:0.85 });
+    return L.geoJSON(curved, {style:options});
 }
 
 function calculateForecastTime(baseTimeStr, addHours) {
@@ -296,7 +327,7 @@ function calculateForecastTime(baseTimeStr, addHours) {
     const date = new Date(dateParts[2], parseInt(dateParts[1]) - 1, dateParts[0], timeParts[0], timeParts[1]);
     date.setHours(date.getHours() + parseFloat(addHours));
 
-    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')} (+${addHours}h)`;
+    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')} (+${addHours}h)`;
 }
 
 function createPopupContent(data, type, baseTimeStr = null) {
@@ -363,7 +394,7 @@ function drawAlertCircles(layer) {
 }
 
 async function drawSingleTC(tcId) {
-    const githubBaseUrl = 'https://raw.githubusercontent.com/zax41006-bot/TC-Track/main';
+    const githubBaseUrl = 'https://raw.githubusercontent.com/zax41006/TC-Track/main';
 
     try {
         const [pRes, fRes] = await Promise.all([
@@ -394,30 +425,30 @@ async function drawSingleTC(tcId) {
         let prevR = 0;
         forecastData.forEach((d) => {
             let currPt = turf.point([d.lng, d.lat]), currR = (d.f_time / 24) * 100;
-            if (currR > 0) coneParts.push(turf.circle(currPt, currR, {units: 'kilometers'}));
+            if (currR > 0) coneParts.push(turf.circle(currPt, currR, {units:'kilometers'}));
             coneParts.push(getSegmentSector(prevPt, prevR, currPt, currR));
             prevPt = currPt; prevR = currR;
         });
         if(coneParts.length > 0) {
             let combined = coneParts[0];
             for (let i = 1; i < coneParts.length; i++) { combined = turf.union(combined, coneParts[i]); }
-            L.geoJSON(combined, { style: { color: '#e67e22', weight: 1, dashArray: '5, 5', fillColor: '#f1c40f', fillOpacity: 0.12 } }).addTo(trackLayer);
+            L.geoJSON(combined, { style: { color: '#e67e22', weight: 1, dashArray: '5,5', fillColor: '#f1c40f', fillOpacity: 0.12 } }).addTo(trackLayer);
         }
 
         L.polyline(pastData.map(d => [d.lat, d.lng]), { color: '#32CD32', weight: 4 }).addTo(trackLayer);
 
         let fPath = [[latestPoint.lat, latestPoint.lng]];
         forecastData.forEach(d => fPath.push([d.lat, d.lng]));
-        getSmoothLine(fPath, { color: '#3498db', weight: 3, dashArray: '8, 8' }).addTo(trackLayer);
+        getSmoothLine(fPath, { color: '#3498db', weight:3, dashArray:'8,8' }).addTo(trackLayer);
 
         pastData.slice(0, -1).forEach(d => 
-            L.circleMarker([d.lat, d.lng], { radius: 5, fillColor: intensityColors[d.intensity] || intensityColors.default, color: "#444", weight: 1, fillOpacity: 1 }).addTo(trackLayer).bindPopup(createPopupContent(d, 'past'))
+            L.circleMarker([d.lat, d.lng], { radius: 5, fillColor: intensityColors[d.intensity] || intensityColors.default, color: "#444", weight:1, fillOpacity:1 }).addTo(trackLayer).bindPopup(createPopupContent(d, 'past'))
         );
 
-        L.circleMarker([latestPoint.lat, latestPoint.lng], { radius: 8, fillColor: intensityColors[latestPoint.intensity] || intensityColors.default, color: "#000", weight: 2.5, fillOpacity: 1 }).addTo(trackLayer).bindPopup(createPopupContent(latestPoint, 'current')).bringToFront();
+        L.circleMarker([latestPoint.lat, latestPoint.lng], { radius: 8, fillColor: intensityColors[latestPoint.intensity] || intensityColors.default, color: "#000", weight:2.5, fillOpacity:1 }).addTo(trackLayer).bindPopup(createPopupContent(latestPoint, 'current')).bringToFront();
 
         forecastData.forEach(d => 
-            L.circleMarker([d.lat, d.lng], { radius: 5, fillColor: intensityColors[d.intensity] || intensityColors.default, color: "#333", weight: 1, fillOpacity: 0.8 }).addTo(trackLayer).bindPopup(createPopupContent(d, 'forecast', baseTimeStr))
+            L.circleMarker([d.lat, d.lng], { radius: 5, fillColor: intensityColors[d.intensity] || intensityColors.default, color: "#333", weight:1, fillOpacity:0.8 }).addTo(trackLayer).bindPopup(createPopupContent(d, 'forecast', baseTimeStr))
         );
 
         return pastData.map(d=>[d.lat, d.lng]).concat(fPath);
@@ -492,7 +523,7 @@ function formatTime(timestamp) {
 }
 
 function createRadarLayer(frame) { 
-    return new L.TileLayer(apiData.host + frame.path + '/256/{z}/{x}/{y}/2/1_1.png', { tileSize: 256, opacity: 0.001, maxNativeZoom: 7, maxZoom: 16 }); 
+    return L.tileLayer(apiData.host + frame.path + '/256/{z}/{x}/{y}/2/1_1.png', { tileSize: 256, opacity: 0.001, maxNativeZoom: 7, maxZoom: 16 }); 
 }
 
 function stop() { 
@@ -564,7 +595,7 @@ function updateSatelliteLayer(frame) {
         currentSatLayer = satLayerCache[exactTimeStr];
     } else {
         var himawariWorldview = L.tileLayer('https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/Himawari_AHI_Band13_Clean_Infrared/default/{time}/GoogleMapsCompatible_Level6/{z}/{y}/{x}.png', {
-            time: exactTimeStr, tileSize: 256, transparent: true, opacity: 0.75, maxNativeZoom: 6, maxZoom: 18, zIndex: 10, keepBuffer: 4, updateWhenIdle: false, crossOrigin: true
+            time: exactTimeStr, tileSize: 256, transparent: true, opacity: 0.75, maxNativeZoom: 6, maxZoom: 18, zIndex: 10, keepBuffer:4, updateWhenIdle: false, crossOrigin: true
         });
         himawariWorldview.addTo(map);
         satLayerCache[exactTimeStr] = himawariWorldview;
