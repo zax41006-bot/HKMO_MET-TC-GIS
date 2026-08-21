@@ -43,7 +43,6 @@
         #mapid { position: absolute; top: 50px; left: 0; bottom: 0; right: 0; background: #aad3df; }
         .leaflet-top.leaflet-left { top: 60px; }
 
-        /* 電腦版：下側雙排圖例【完全保留原本樣式不變】 */
         .professional-legend {
             position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
             background: var(--panel-bg); padding: 8px 16px; border-radius: 8px;
@@ -84,64 +83,29 @@
         .radar-legend-labels { display: flex; justify-content: space-between; font-size: 10px; color: #666; font-weight: bold; }
 
         #distance-panel {
-            position: absolute;
-            top: 150px;
-            right: 10px;
-            z-index: 1005;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 10px 14px;
-            border-radius: 6px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            font-size: 13px;
-            font-weight: 500;
-            color: #2c3e50;
-            min-width: 170px;
-            line-height: 1.6;
-            border: 1px solid #ddd;
+            position: absolute; top: 150px; right: 10px; z-index: 1005;
+            background: rgba(255, 255, 255, 0.95); padding: 10px 14px;
+            border-radius: 6px; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            font-size: 13px; font-weight: 500; color: #2c3e50;
+            min-width: 170px; line-height: 1.6; border: 1px solid #ddd;
         }
         #distance-panel strong {
-            display: block;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 5px;
-            margin-bottom: 6px;
-            font-size: 14px;
-            color: #2c3e50;
+            display: block; border-bottom: 2px solid #eee; padding-bottom: 5px;
+            margin-bottom: 6px; font-size: 14px; color: #2c3e50;
         }
 
-        /* ========== 手機版：圖例移右下角 ========== */
         @media screen and (max-width: 768px) {
             .header b { font-size: 13px; }
             .radar-ui { bottom: 220px; width: 240px; padding: 10px; }
-
             .professional-legend {
-                left: auto !important;
-                right: 10px !important;
-                bottom: 10px !important;
-                transform: none !important;
-                width: auto !important;
-                max-width: 45vw !important;
-                padding: 6px 8px;
-                max-height: unset;
-                overflow-x: unset;
+                left: auto !important; right: 10px !important; bottom: 10px !important;
+                transform: none !important; width: auto !important; max-width: 45vw !important;
+                padding: 6px 8px; max-height: unset; overflow-x: unset;
             }
-            .legend-container {
-                gap: 8px !important;
-            }
-            .legend-section {
-                flex-direction: column;
-                align-items: flex-start;
-                gap:4px !important;
-                white-space: normal;
-            }
-            .legend-title-inline {
-                border-right: none;
-                padding-right: 0;
-                margin-bottom:2px;
-            }
-            .legend-row {
-                font-size:9px;
-            }
-
+            .legend-container { gap: 8px !important; }
+            .legend-section { flex-direction: column; align-items: flex-start; gap:4px !important; white-space: normal; }
+            .legend-title-inline { border-right: none; padding-right: 0; margin-bottom:2px; }
+            .legend-row { font-size:9px; }
             #distance-panel { top: 140px; font-size: 12px; min-width: 140px; padding: 8px 10px; }
         }
     </style>
@@ -205,7 +169,6 @@
 
 <div class="professional-legend">
     <div class="legend-container">
-        <!-- 第一排：路徑圖例 -->
         <div class="legend-section">
             <span class="legend-title-inline">路徑圖例</span>
             <div class="legend-row"><div class="dot" style="background:#fff; border: 2.5px solid #000; width:10px; height:10px;"></div> <b>實時位置</b></div>
@@ -213,7 +176,6 @@
             <div class="legend-row"><div class="line" style="border-top: 3px dashed #3498db;"></div> 預報路徑</div>
             <div class="legend-row"><div class="box"></div> 70% 誤差帶</div>
         </div>
-        <!-- 第二排：強度等級 -->
         <div class="legend-section">
             <span class="legend-title-inline">強度等級</span>
             <div class="legend-row"><div class="dot" style="background:#dcdcdc;"></div> LPA 低壓區</div>
@@ -229,32 +191,22 @@
 </div>
 
 <script>
-
-// 代號清單直接為字母
 const TC_LIST = ['A','B'];
 
-// 用於距離面板顯示名稱
+// 【修正】對齊 HTML 中選單的名稱
 const TC_DISPLAY_NAMES = {
-    'A': '95W',
+    'A': '熱帶低氣壓',
     'B': '沙德爾'
 };
 
 const baseLayers = {
-    light: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 22, maxNativeZoom: 20, detectRetina: true
-    }),
-    dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 22, maxNativeZoom: 20, detectRetina: true
-    }),
-    satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        maxZoom: 22, maxNativeZoom: 19
-    })
+    light: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 22, maxNativeZoom: 20, detectRetina: true }),
+    dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 22, maxNativeZoom: 20, detectRetina: true }),
+    satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 22, maxNativeZoom: 19 })
 };
 
 function changeMapType(type) {
-    map.eachLayer(layer => {
-        if(Object.values(baseLayers).includes(layer)) map.removeLayer(layer);
-    })
+    map.eachLayer(layer => { if(Object.values(baseLayers).includes(layer)) map.removeLayer(layer); })
     baseLayers[type].addTo(map);
 }
 
@@ -270,34 +222,28 @@ let trackLayer = L.layerGroup().addTo(map);
 
 let tcDistances = {};
 
-function toggleForecastImg() {
-    const target = document.getElementById('tc-selector').value;
-    const overlay = document.getElementById('img-overlay');
-    const img = document.getElementById('forecast-img-src');
-    
-    if (target === 'all') {
-        img.src = `TC-ALL.png?t=${new Date().getTime()}`;
-    } else {
-        img.src = `TC_forecast_${target}.png?t=${new Date().getTime()}`;
-    }
-    overlay.style.display = 'flex';
-}
-
+// 【修正】強化 CSV 解析防呆，避免讀取到 404 網頁或空值造成座標與 Turf 崩潰
 function parseCSV(text) {
+    if (!text || text.includes("<html") || text.includes("404: Not Found")) return [];
     const lines = text.trim().split('\n');
     if (lines.length < 2) return [];
+    
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
     return lines.slice(1).map(line => {
         const values = line.split(',');
         let obj = {};
         headers.forEach((h, i) => {
             let val = values[i] ? values[i].trim() : "";
-            if(['lat', 'lng', 'lon', 'f_time', 'wind', 'minimum central pressure'].includes(h)) val = parseFloat(val);
+            if(['lat', 'lng', 'lon', 'f_time', 'ftime', 'wind', 'minimum central pressure'].includes(h)) {
+                val = parseFloat(val);
+                if (isNaN(val)) val = 0; // 防止 NaN 崩潰
+            }
             obj[h] = val;
         });
-        if (obj.lon && !obj.lng) obj.lng = obj.lon;
+        if (obj.lon !== undefined && obj.lng === undefined) obj.lng = obj.lon;
+        if (obj.ftime !== undefined && obj.f_time === undefined) obj.f_time = obj.ftime; // 統一欄位名稱
         return obj;
-    });
+    }).filter(obj => obj.lat !== undefined && obj.lng !== undefined && obj.lat !== 0); 
 }
 
 function getSegmentSector(p1, r1, p2, r2) {
@@ -323,10 +269,8 @@ function calculateForecastTime(baseTimeStr, addHours) {
     const dateParts = parts[0].split('/');
     const timeParts = parts[1].split(':');
     if (dateParts.length !== 3 || timeParts.length !== 2) return `+${addHours}h`;
-
     const date = new Date(dateParts[2], parseInt(dateParts[1]) - 1, dateParts[0], timeParts[0], timeParts[1]);
     date.setHours(date.getHours() + parseFloat(addHours));
-
     return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')} (+${addHours}h)`;
 }
 
@@ -358,51 +302,46 @@ function createPopupContent(data, type, baseTimeStr = null) {
 function drawAlertCircles(layer) {
     fetch('https://geo.datav.aliyun.com/areas_v3/bound/810000.json')
         .then(res => res.json())
-        .then(data => {
-            L.geoJSON(data, {
-                style: { color: "red", weight: 2, fillOpacity: 0 }
-            }).addTo(layer);
-        })
+        .then(data => { L.geoJSON(data, { style: { color: "red", weight: 2, fillOpacity: 0 } }).addTo(layer); })
         .catch(err => console.error("加載阿里香港邊界失敗:", err));
 
     fetch('https://geo.datav.aliyun.com/areas_v3/bound/820000.json')
         .then(res => res.json())
-        .then(data => {
-            L.geoJSON(data, {
-                style: { color: "#00a86b", weight: 2, fillOpacity: 0 }
-            }).addTo(layer);
-        })
+        .then(data => { L.geoJSON(data, { style: { color: "#00a86b", weight: 2, fillOpacity: 0 } }).addTo(layer); })
         .catch(err => console.error("加載阿里澳門邊界失敗:", err));
 
     L.marker([MACAO_COORDS[0], MACAO_COORDS[1]], { 
-        icon: L.divIcon({ 
-            html: `<div style="color: #00a86b; font-weight: bold; font-size: 12px; white-space: nowrap; text-shadow: 1px 1px 1px white;">澳門</div>`, 
-            className: 'circle-label', 
-            iconSize: [40, 20], 
-            iconAnchor: [20, 10] 
-        }) 
+        icon: L.divIcon({ html: `<div style="color: #00a86b; font-weight: bold; font-size: 12px; white-space: nowrap; text-shadow: 1px 1px 1px white;">澳門</div>`, className: 'circle-label', iconSize: [40, 20], iconAnchor: [20, 10] }) 
     }).addTo(layer);
 
     L.marker([HK_COORDS[0], HK_COORDS[1]], { 
-        icon: L.divIcon({ 
-            html: `<div style="color: red; font-weight: bold; font-size: 12px; white-space: nowrap; text-shadow: 1px 1px 1px white;">香港</div>`, 
-            className: 'circle-label', 
-            iconSize: [40, 20], 
-            iconAnchor: [20, 10] 
-        }) 
+        icon: L.divIcon({ html: `<div style="color: red; font-weight: bold; font-size: 12px; white-space: nowrap; text-shadow: 1px 1px 1px white;">香港</div>`, className: 'circle-label', iconSize: [40, 20], iconAnchor: [20, 10] }) 
     }).addTo(layer);
 }
 
+// 【修正】獨立一個安全的 Fetch 方法，避免 404 直接炸掉 Promise 解析
+async function fetchCSVData(url) {
+    try {
+        const res = await fetch(url);
+        if (!res.ok) return ""; // 攔截 HTTP 404 等錯誤
+        return await res.text();
+    } catch (e) {
+        return "";
+    }
+}
+
 async function drawSingleTC(tcId) {
-    const githubBaseUrl = 'https://raw.githubusercontent.com/zax41006/TC-Track/main';
+    // 【修正】將 URL 對應你截圖的 bot 帳號。如果 CSV 和 HTML 放同個資料夾，建議直接改為 '.'
+    const githubBaseUrl = 'https://raw.githubusercontent.com/zax41006-bot/TC-Track/main'; 
+    // const githubBaseUrl = '.'; 
 
     try {
-        const [pRes, fRes] = await Promise.all([
-            fetch(`${githubBaseUrl}/past_track_${tcId}.csv`).catch(()=>({text:()=>""})), 
-            fetch(`${githubBaseUrl}/forecast_track_${tcId}.csv`).catch(()=>({text:()=>""}))
-        ]);
-        const pastData = parseCSV(await pRes.text());
-        const forecastData = parseCSV(await fRes.text());
+        const pText = await fetchCSVData(`${githubBaseUrl}/past_track_${tcId}.csv`);
+        const fText = await fetchCSVData(`${githubBaseUrl}/forecast_track_${tcId}.csv`);
+        
+        const pastData = parseCSV(pText);
+        const forecastData = parseCSV(fText);
+        
         if(pastData.length === 0) {
             tcDistances[tcId] = null;
             return [];
@@ -423,12 +362,17 @@ async function drawSingleTC(tcId) {
         let coneParts = [];
         let prevPt = turf.point([latestPoint.lng, latestPoint.lat]);
         let prevR = 0;
+        
         forecastData.forEach((d) => {
-            let currPt = turf.point([d.lng, d.lat]), currR = (d.f_time / 24) * 100;
+            let currPt = turf.point([d.lng, d.lat]);
+            let fTime = d.f_time || 0; // 防呆處理，避免 undefined
+            let currR = (fTime / 24) * 100;
+            
             if (currR > 0) coneParts.push(turf.circle(currPt, currR, {units:'kilometers'}));
             coneParts.push(getSegmentSector(prevPt, prevR, currPt, currR));
             prevPt = currPt; prevR = currR;
         });
+        
         if(coneParts.length > 0) {
             let combined = coneParts[0];
             for (let i = 1; i < coneParts.length; i++) { combined = turf.union(combined, coneParts[i]); }
@@ -485,12 +429,6 @@ async function init() {
     trackLayer.clearLayers();
     drawAlertCircles(trackLayer);
     const target = document.getElementById('tc-selector').value;
-    
-    const forecastBtn = document.getElementById('forecast-btn');
-    if (forecastBtn) {
-        forecastBtn.style.display = (target === 'all') ? 'none' : 'inline-block';
-    }
-
     tcDistances = {};
     let allBounds = [];
     try {
@@ -518,30 +456,10 @@ var layerCache = {};
 var radarVisible = false;
 var satVisible = false; 
 
-function formatTime(timestamp) { 
-    return new Date(timestamp * 1000).toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit', hour12: false }); 
-}
-
-function createRadarLayer(frame) { 
-    return L.tileLayer(apiData.host + frame.path + '/256/{z}/{x}/{y}/2/1_1.png', { tileSize: 256, opacity: 0.001, maxNativeZoom: 7, maxZoom: 16 }); 
-}
-
-function stop() { 
-    if (animationTimer) { 
-        clearTimeout(animationTimer); 
-        animationTimer = false; 
-        document.getElementById("playBtn").innerHTML = "▶"; 
-        return true; 
-    } 
-    return false; 
-}
-
-function play() { 
-    animationTimer = true; 
-    document.getElementById("playBtn").innerHTML = "⏸"; 
-    showFrame(animationPosition + 1); 
-}
-
+function formatTime(timestamp) { return new Date(timestamp * 1000).toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit', hour12: false }); }
+function createRadarLayer(frame) { return L.tileLayer(apiData.host + frame.path + '/256/{z}/{x}/{y}/2/1_1.png', { tileSize: 256, opacity: 0.001, maxNativeZoom: 7, maxZoom: 16 }); }
+function stop() { if (animationTimer) { clearTimeout(animationTimer); animationTimer = false; document.getElementById("playBtn").innerHTML = "▶"; return true; } return false; }
+function play() { animationTimer = true; document.getElementById("playBtn").innerHTML = "⏸"; showFrame(animationPosition + 1); }
 function playStop() { if (!stop()) play(); }
 function updateTimestamp(frame) { document.getElementById("timestamp").innerHTML = formatTime(frame.time); }
 
@@ -646,6 +564,5 @@ function loadOrShowData() {
     }
 }
 </script>
-
 </body>
 </html>
