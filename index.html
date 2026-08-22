@@ -119,6 +119,8 @@
             <option value="all" selected>所有熱帶氣旋</option>
             <option value="A">紫檀</option>
             <option value="B">沙德爾</option>
+            <option value="C">簡拉維</option>
+            <option value="D">熱帶低氣壓97w</option>
         </select>
     </div>
 </div>
@@ -191,12 +193,14 @@
 </div>
 
 <script>
-const TC_LIST = ['A','B'];
+const TC_LIST = ['A','B','C','D'];
 
 // 【修正】對齊 HTML 中選單的名稱
 const TC_DISPLAY_NAMES = {
     'A': '紫檀',
-    'B': '沙德爾'
+    'B': '沙德爾',
+    'C': '簡拉維',
+    'D': '熱帶低氣壓97w'
 };
 
 const baseLayers = {
