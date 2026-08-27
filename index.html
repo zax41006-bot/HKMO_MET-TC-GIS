@@ -94,7 +94,8 @@
             margin-bottom: 6px; font-size: 14px; color: #2c3e50;
         }
 
-        @media screen and (max-width: 768px) {
+        /* ===== 修改点：将 768px 改为 1024px，使 iPad 也使用手机版布局 ===== */
+        @media screen and (max-width: 1024px) {
             .header b { font-size: 13px; }
             .radar-ui { bottom: 220px; width: 240px; padding: 10px; }
             .professional-legend {
@@ -117,10 +118,8 @@
     <div style="display: flex; align-items: center;">
         <select id="tc-selector" onchange="init()">
             <option value="all" selected>所有熱帶氣旋</option>
-            <option value="A">紫檀</option>
             <option value="B">沙德爾</option>
-            <option value="C">簡拉維</option>
-            <option value="D">艾莎尼</option>
+            <option value="E">艾濤</option>
         </select>
     </div>
 </div>
@@ -193,14 +192,12 @@
 </div>
 
 <script>
-const TC_LIST = ['A','B','C','D'];
+const TC_LIST = ['B','E'];
 
 // 【修正】對齊 HTML 中選單的名稱
 const TC_DISPLAY_NAMES = {
-    'A': '紫檀',
     'B': '沙德爾',
-    'C': '簡拉維',
-    'D': '艾莎尼'
+    'E': '艾濤'
 };
 
 const baseLayers = {
