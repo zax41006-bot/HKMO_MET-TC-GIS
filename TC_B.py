@@ -90,7 +90,7 @@ def draw_chart():
         fig, ax = plt.subplots(figsize=(12, 10), subplot_kw={'projection': ccrs.PlateCarree()})
         
         # 根據過去與預報經緯度動態或固定邊界
-        lon_min, lon_max, lat_min, lat_max = 105.0, 145.0, 15, 45
+        lon_min, lon_max, lat_min, lat_max = 107.5, 120.0, 17.5, 27
         ax.set_extent([lon_min, lon_max, lat_min, lat_max], crs=ccrs.PlateCarree())
 
 
@@ -143,16 +143,16 @@ def draw_chart():
             _, ln, lt, wd, h, _, cyc = d
             _, col, m = get_intensity_info(wd, cyc)
             if h in {24, 48, 72, 96, 120}:
-                ax.plot(ln, lt, marker=m, ms=7.0, color=col, mec='k', mew=0.6, zorder=10)
+                ax.plot(ln, lt, marker=m, ms=8.0, color=col, mec='k', mew=0.6, zorder=10)
             else:
-                ax.plot(ln, lt, marker='x', ms=5.0, color="#0288D1", mew=0.8, zorder=9)
+                ax.plot(ln, lt, marker='x', ms=4.0, color="#0288D1", mew=0.8, zorder=9)
 
 
 
 
         # 現時位置 ICON（縮小至 ms=7.5）
         _, c_col, c_m = get_intensity_info(curr[3])
-        ax.plot(curr[1], curr[2], marker=c_m, ms=7.5, color=c_col, mec='k', mew=0.8, zorder=10)
+        ax.plot(curr[1], curr[2], marker=c_m, ms=8.5, color=c_col, mec='k', mew=0.8, zorder=10)
 
 
 
