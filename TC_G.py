@@ -188,8 +188,8 @@ def draw_chart():
 
         info_txt = (f"現時位置資料\n時間：{curr[0]}\n強度：{get_intensity_info(curr[3])[0]}\n"
                     f"近中心最大風速：{curr[3]}kph  中心氣壓：{curr[4]}hPa\n"
-                    f"現時位置：{curr[2]:.1f}°N, {curr[1]:.1f}°E\n"
-                    f"距香港：{dist_hk_rounded}公里  距澳門：{dist_macao_rounded}公里")
+                    f"現時位置：{curr[2]:.1f}°N, {curr[1]:.1f}°E\n")
+                    #f"距香港：{dist_hk_rounded}公里  距澳門：{dist_macao_rounded}公里")
         ax.text(0.03, 0.96, info_txt, transform=ax.transAxes, va='top', fontsize=9.0, fontweight='bold', linespacing=1.35,
                 bbox=dict(boxstyle="round,pad=0.4", fc="white", alpha=0.88, ec="#B0BEC5", lw=0.8), zorder=20)
         
