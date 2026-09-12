@@ -118,8 +118,7 @@
     <div style="display: flex; align-items: center;">
         <select id="tc-selector" onchange="init()">
             <option value="all" selected>所有熱帶氣旋</option>
-            <option value="B">沙德爾</option>
-            <option value="G">科羅旺</option>
+            <option value="I">熱帶低氣壓</option>
         </select>
     </div>
 </div>
@@ -192,12 +191,11 @@
 </div>
 
 <script>
-const TC_LIST = ['B','G'];
+const TC_LIST = ['I'];
 
 // 【修正】對齊 HTML 中選單的名稱
 const TC_DISPLAY_NAMES = {
-    'B': '沙德爾',
-    'G': '科羅旺',
+    'I': '98w',
 };
 
 const baseLayers = {
@@ -211,7 +209,7 @@ function changeMapType(type) {
     baseLayers[type].addTo(map);
 }
 
-const intensityColors = { "LPA": "#dcdcdc", "EX": "#707070", "TD": "#eee8aa", "TS": "#3498db", "STS": "#2ecc71", "TY": "#ffa200f6", "STY": "#ff0000", "SUTY": "#9b59b6", "default": "#666" };
+const intensityColors = { "MD": "#dcdcdc","LPA": "#dcdcdc", "EX": "#707070", "TD": "#eee8aa", "TS": "#3498db", "STS": "#2ecc71", "TY": "#ffa200f6", "STY": "#ff0000", "SUTY": "#9b59b6", "default": "#666" };
 const intensityNames = { "LPA": "低壓區", "TD": "熱帶低氣壓", "TS": "熱帶風暴", "STS": "強烈熱帶風暴", "TY": "颱風", "STY": "強颱風", "SUTY": "超強颱風", "EX": "溫帶氣旋" };
 const MACAO_COORDS = [22.17, 113.55]; 
 const HK_COORDS = [22.3193, 114.1694]; 
