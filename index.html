@@ -300,14 +300,12 @@ async function drawSingleTC(tcId) {
         
         const pastData = parseCSV(pText);
 
-        // 【修正】原為 const，重新賦值會拋 TypeError 導致整個 TC 畫不出來，改為 let
-        let forecastData = parseCSV(fText);
+        // 【修正】全部預報節點都用來繪製路徑與誤差帶，按時次升序排序
+        const forecastData = parseCSV(fText)
+            .sort((a, b) => Number(a.f_time) - Number(b.f_time));
 
-        // 【修正】只保留指定預報時次：12,24,36,48,60,72,96,120
-        const validHours = new Set([12, 24, 36, 48, 60, 72, 96, 120]);
-        forecastData = forecastData
-            .filter(d => validHours.has(Number(d.f_time)))
-            .sort((a, b) => Number(a.f_time) - Number(b.f_time)); // 按時次升序，確保錐形與路徑順序正確
+        // 【修正】需顯示節點的時次集合：12, 24, 36, 48, 60, 72, 96, 120
+        const visibleHours = new Set([12, 24, 36, 48, 60, 72, 96, 120]);
 
         if(pastData.length === 0) {
             tcDistances[tcId] = null;
@@ -351,9 +349,13 @@ async function drawSingleTC(tcId) {
             L.circleMarker([d.lat, d.lng], { radius: 5, fillColor: intensityColors[d.intensity] || intensityColors.default, color: "#444", weight:1, fillOpacity:1 }).addTo(trackLayer).bindPopup(createPopupContent(d, 'past'))
         );
         L.circleMarker([latestPoint.lat, latestPoint.lng], { radius: 8, fillColor: intensityColors[latestPoint.intensity] || intensityColors.default, color: "#000", weight:2.5, fillOpacity:1 }).addTo(trackLayer).bindPopup(createPopupContent(latestPoint, 'current')).bringToFront();
-        forecastData.forEach(d => 
-            L.circleMarker([d.lat, d.lng], { radius: 5, fillColor: intensityColors[d.intensity] || intensityColors.default, color: "#333", weight:1, fillOpacity:0.8 }).addTo(trackLayer).bindPopup(createPopupContent(d, 'forecast', baseTimeStr))
-        );
+
+        // 【修正】只為 12/24/36/48/60/72/96/120 這幾個時次繪製節點圓點，其餘節點隱藏
+        forecastData.forEach(d => {
+            if (!visibleHours.has(Number(d.f_time))) return;
+            L.circleMarker([d.lat, d.lng], { radius: 5, fillColor: intensityColors[d.intensity] || intensityColors.default, color: "#333", weight:1, fillOpacity:0.8 }).addTo(trackLayer).bindPopup(createPopupContent(d, 'forecast', baseTimeStr));
+        });
+
         return pastData.map(d=>[d.lat, d.lng]).concat(fPath);
     } catch (e) {
         console.error(`加載熱帶氣旋 ${tcId} 失敗:`, e);
