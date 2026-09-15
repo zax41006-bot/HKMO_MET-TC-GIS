@@ -37,7 +37,6 @@ MACAO_LON, MACAO_LAT = 113.55, 22.17
 HK_LON, HK_LAT = 114.17, 22.32
 
 # ==================== 強度代碼 → 顏色 / 中文名稱 對照表 ====================
-# 修復 Bug：所有鍵統一使用大寫，避免 upper() 轉換後找不到對應鍵
 INTENSITY_MAP = {
     "LPA":     ("低壓區",       "#C5C9CE"),
     "MD":      ("季風低壓",     "#C5C9CE"),   
@@ -46,7 +45,7 @@ INTENSITY_MAP = {
     "STS":     ("強烈熱帶風暴", "#4CAF50"),
     "TY":      ("颱風",         "#F5A623"),
     "STY":     ("強颱風",       "#EF6C3A"),
-    "SUPERTY": ("超強颱風",     "#A056C4"),   # 改為全大寫
+    "SUTY":    ("超強颱風",     "#A056C4"),   
     "EX":      ("溫帶氣旋",     "#9E9E9E"),   
 }
 
@@ -59,11 +58,10 @@ def get_intensity_code(wind, cyc_type="tropical"):
     elif wind <= 117: return "STS"
     elif wind <= 149: return "TY"
     elif wind <= 184: return "STY"
-    else: return "SUPERTY"  # 同步改為大寫
+    else: return "SUTY"  
 
 def get_intensity_by_code(code):
     """依強度代碼回傳 (中文名稱, 顏色)"""
-    # 這裡 .upper() 會把傳入的 "SuperTY" 轉成 "SUPERTY"，現在能正確對應到了
     return INTENSITY_MAP.get(str(code).strip().upper(), INTENSITY_MAP["LPA"])
 
 def get_intensity_info(wind, cyc_type="tropical"):
@@ -104,8 +102,11 @@ def draw_chart():
                 row['minimum central pressure'], row.get('type', 'tropical'), int_code
             ])
 
-        fig, ax = plt.subplots(figsize=(12, 10), subplot_kw={'projection': ccrs.PlateCarree()})
-        fig.patch.set_facecolor("#FAFBF7")   # 畫布底色：淡奶油白
+        # 畫布整體放大
+        fig, ax = plt.subplots(figsize=(14, 12), subplot_kw={'projection': ccrs.PlateCarree()})
+        
+        # 畫布背景純白
+        fig.patch.set_facecolor("#FFFFFF")   
         
         # 邊界
         lon_min, lon_max, lat_min, lat_max = 100.0, 160.0, 7.5, 52.5
@@ -113,31 +114,31 @@ def draw_chart():
 
         # ==================== 2. 地圖美化配色（柔和高質感） ====================
         ax.set_facecolor("#C7DDF0")  # 海洋底色
-        ax.add_feature(cfeature.OCEAN, facecolor="#C7DDF0", zorder=0)                      # 海洋：柔和天藍
+        ax.add_feature(cfeature.OCEAN, facecolor="#C7DDF0", zorder=0)                      
         ax.add_feature(cfeature.LAND, facecolor="#F4EFE2", edgecolor="#9DB0BA", 
-                       linewidth=0.6, zorder=1)                                            # 陸地：暖奶油米色
-        ax.add_feature(cfeature.COASTLINE, linewidth=0.85, edgecolor='#7A8C96', zorder=2)  # 海岸線：柔和灰藍
+                       linewidth=0.6, zorder=1)                                            
+        ax.add_feature(cfeature.COASTLINE, linewidth=0.85, edgecolor='#7A8C96', zorder=2)  
         ax.add_feature(cfeature.BORDERS, linestyle=':', linewidth=0.5, 
-                       edgecolor='#B5C2CB', zorder=2)                                       # 國界：極淺灰
+                       edgecolor='#B5C2CB', zorder=2)                                       
 
         gl = ax.gridlines(draw_labels=True, linewidth=0.4, color='#A8B8C0', 
                           alpha=0.45, linestyle='--', zorder=1)
         gl.top_labels = gl.right_labels = False
         gl.xlocator = mticker.MultipleLocator(5)
         gl.ylocator = mticker.MultipleLocator(5)
-        gl.xlabel_style = {'color': '#5A6B75', 'fontsize': 9}
-        gl.ylabel_style = {'color': '#5A6B75', 'fontsize': 9}
+        gl.xlabel_style = {'color': '#5A6B75', 'fontsize': 10}
+        gl.ylabel_style = {'color': '#5A6B75', 'fontsize': 10}
 
         # ==================== 3. 標記澳門與香港位置 ====================
-        ax.plot(MACAO_LON, MACAO_LAT, '*', color="#00A896", ms=11.0, 
-                mec='#00695C', mew=0.9, zorder=12)
-        ax.plot(HK_LON, HK_LAT, '*', color="#E63946", ms=11.0, 
-                mec='#9B1D20', mew=0.9, zorder=12)
+        ax.plot(MACAO_LON, MACAO_LAT, '*', color="#00A896", ms=13.0, 
+                mec='#00695C', mew=1.0, zorder=12)
+        ax.plot(HK_LON, HK_LAT, '*', color="#E63946", ms=13.0, 
+                mec='#9B1D20', mew=1.0, zorder=12)
 
         # ==================== 4. 路徑與預報區域繪製 ====================
-        # 過去路徑線：沉穩森林綠
+        # 過去路徑線
         ax.plot([d[1] for d in past_data], [d[2] for d in past_data], 
-                color="#000000", lw=2.5, solid_capstyle='round', zorder=4)
+                color="#0A8C10", lw=2.8, solid_capstyle='round', zorder=4)
         
         # 預報誤差扇形/橢圓區域
         f_hs = [d[4] for d in forecast_data]
@@ -147,30 +148,30 @@ def draw_chart():
         xi, yi, ri = PchipInterpolator(all_h, all_ln)(ih), PchipInterpolator(all_h, all_lt)(ih), PchipInterpolator(all_h, all_er)(ih)
         ps = [Polygon(np.dstack((xi[i] + ri[i] * np.cos(np.linspace(0, 2 * np.pi, 360)), yi[i] + ri[i] * np.sin(np.linspace(0, 2 * np.pi, 360))))[0]) for i in range(len(ih))]
         
-        # 誤差範圍：淡藍灰色系
+        # 誤差範圍
         ax.add_geometries([unary_union([MultiPolygon([ps[i], ps[i + 1]]).convex_hull for i in range(len(ps) - 1)])], 
-                          ccrs.PlateCarree(), fc="#DCE5EC", alpha=0.55, ec="#90A4AE", lw=0.9, zorder=3)
-        # 預報路徑：恢復原來的樣式
-        ax.plot(xi, yi, color="#0288D1", lw=2.2, ls='--', zorder=4)
+                          ccrs.PlateCarree(), fc="#DCE5EC", alpha=0.55, ec="#90A4AE", lw=1.0, zorder=3)
+        # 預報路徑
+        ax.plot(xi, yi, color="#062FAD", lw=2.6, ls='--', zorder=4)
 
-        # 預報點 ICON（僅顯示 24, 48, 72, 96, 120 節點；顏色由強度代碼決定）
+        # 預報點 ICON
         for d in forecast_data:
             _, ln, lt, wd, h, _, cyc, int_code = d
             _, col = get_intensity_by_code(int_code)
             if h in {24, 48, 72, 96, 120}:
-                ax.plot(ln, lt, marker=tcmarkers.HU, ms=8.5, color=col, 
-                        mec='#2C3E50', mew=0.7, zorder=10)
+                ax.plot(ln, lt, marker=tcmarkers.HU, ms=10.5, color=col, 
+                        mec='#2C3E50', mew=0.8, zorder=10)
 
-        # 現時位置 ICON（顏色由強度代碼決定）
+        # 現時位置 ICON
         _, c_col = get_intensity_by_code(curr[5])
-        ax.plot(curr[1], curr[2], marker=tcmarkers.HU, ms=9.5, color=c_col, 
-                mec='#2C3E50', mew=0.9, zorder=10)
+        ax.plot(curr[1], curr[2], marker=tcmarkers.HU, ms=11.5, color=c_col, 
+                mec='#2C3E50', mew=1.0, zorder=10)
 
         # ==================== 5. 標題與資訊欄 ====================
-        fig.text(0.5, 0.94, f"熱帶氣旋「{TC_NAME}」路徑預報圖", ha='center', 
-                 fontsize=20, fontweight='bold', color='#1F2D3D')
-        fig.text(0.5, 0.91, f"預報時效：{max(f_hs)} 小時", ha='center', 
-                 fontsize=13, color='#5A6B75')
+        fig.text(0.5, 0.96, f"熱帶氣旋「{TC_NAME}」路徑預報圖", ha='center', 
+                 fontsize=26, fontweight='bold', color='#1F2D3D')
+        fig.text(0.5, 0.92, f"預報時效：{max(f_hs)} 小時", ha='center', 
+                 fontsize=18, color='#5A6B75')
 
         # 計算距離
         cyc_lon, cyc_lat = curr[1], curr[2]
@@ -189,10 +190,9 @@ def draw_chart():
         dist_hk_rounded = round(dist_hk_km / 10) * 10
         dist_macao_rounded = round(dist_macao_km / 10) * 10
 
-        # 整理預報資訊列表 (24, 48, 72, 96, 120)，並推算預報時間
+        # 整理預報資訊列表
         fore_info_lines = ["\n預報資訊："]
         
-        # 解析當前時間
         try:
             if '/' in str(curr[0]) and ':' in str(curr[0]):
                 base_time = datetime.datetime.strptime(str(curr[0]), '%d/%m/%Y %H:%M')
@@ -209,56 +209,66 @@ def draw_chart():
                 time_str = fore_time.strftime('%d/%m/%Y %H:%M')
                 fore_info_lines.append(f"{time_str} {d[7]}")
 
-        # 組合資訊欄文字（補回距離香港）
+        # 組合資訊欄文字
         info_txt = (f"現時資訊：\n"
                     f"距離澳門：{dist_macao_rounded}公里  距離香港：{dist_hk_rounded}公里\n"
                     f"{curr[0]}\n"
                     f"{curr[5]}, {curr[3]}kph, {curr[4]}hPa\n"
                     + "\n".join(fore_info_lines))
         
-        # 資訊欄：白底
+        # 資訊欄放大
         ax.text(0.03, 0.96, info_txt, transform=ax.transAxes, va='top', 
-                fontsize=9.0, fontweight='bold', linespacing=1.45, color='#1F2D3D',
-                bbox=dict(boxstyle="round,pad=0.5", fc="#FFFFFF", alpha=0.94, 
-                          ec="#B0BEC5", lw=0.9), zorder=20)
+                fontsize=12.0, fontweight='bold', linespacing=1.6, color='#1F2D3D',
+                bbox=dict(boxstyle="round,pad=0.6", fc="#FFFFFF", alpha=0.94, 
+                          ec="#B0BEC5", lw=1.0), zorder=20)
         
-        # 發佈單位：深藍底白字
+        # ==================== 修改點：發佈單位字體放大 ====================
         ax.text(0.98, 0.98, "港澳天氣站HKMO_MET 發佈", transform=ax.transAxes, 
-                ha='right', va='top', fontsize=11.0, fontweight='bold',
+                ha='right', va='top', fontsize=18.0, fontweight='bold',
                 color='#FFFFFF', 
-                bbox=dict(boxstyle="round,pad=0.35", fc="#37474F", alpha=0.92, ec="none"), 
+                bbox=dict(boxstyle="round,pad=0.5", fc="#37474F", alpha=0.92, ec="none"), 
                 zorder=20)
 
         # ==================== 6. 圖例整理 ====================
         leg_core_loc = [
-            Line2D([0], [0], color="#388E3C", lw=2.3, solid_capstyle='round', label='過去路徑'), 
-            Line2D([0], [0], color="#0288D1", lw=2.3, ls='--', label='預報路徑'), 
+            Line2D([0], [0], color="#388E3C", lw=2.5, solid_capstyle='round', label='過去路徑'), 
+            Line2D([0], [0], color="#0288D1", lw=2.5, ls='--', label='預報路徑'), 
             plt.Rectangle((0, 0), 1, 1, fc="#DCE5EC", alpha=0.6, ec="#90A4AE", label='預報誤差範圍'),
             Line2D([0], [0], marker='*', color='w', markerfacecolor='#00A896', 
-                   markeredgecolor='#00695C', ms=9.0, label='澳門'),
+                   markeredgecolor='#00695C', ms=11.0, label='澳門'),
             Line2D([0], [0], marker='*', color='w', markerfacecolor='#E63946', 
-                   markeredgecolor='#9B1D20', ms=9.0, label='香港')
+                   markeredgecolor='#9B1D20', ms=11.0, label='香港')
         ]
         
-        # 圖例：依強度代碼取顏色（不含 MD 季風低壓；只顯示中文名稱）
-        # 這裡的順序嚴格按照您的要求
         leg_int = [
             Line2D([0], [0], marker=tcmarkers.HU,
                    c=get_intensity_by_code(code)[1],
                    label=get_intensity_by_code(code)[0],
-                   ms=5.4, mec='#2C3E50', mew=0.6, ls='')
-            for code in ["LPA", "TD", "TS", "STS", "TY", "STY", "SUPERTY", "EX"]
+                   ms=7.0, mec='#2C3E50', mew=0.6, ls='')
+            for code in ["LPA", "TD", "TS", "STS", "TY", "STY", "SUTY", "EX"]
         ]
 
-        leg_params = dict(loc='lower center', frameon=True, edgecolor='#CFD8DC', 
-                          facecolor="#FFFFFF", framealpha=0.95)
+        # ==================== 修改點：圖例聚攏（縮小間距） ====================
+        leg_params = dict(
+            loc='lower center', 
+            frameon=True, 
+            edgecolor='#CFD8DC', 
+            facecolor="#FFFFFF", 
+            framealpha=0.95,
+            labelspacing=0.8,      
+            handletextpad=1.0,     
+            columnspacing=1.5,     
+            borderpad=0.8          
+        )
 
-        fig.legend(handles=leg_core_loc, ncol=5, bbox_to_anchor=(0.5, 0.10), 
-                   fontsize=9.5, **leg_params)
-        fig.legend(handles=leg_int, ncol=8, bbox_to_anchor=(0.5, 0.05), 
-                   fontsize=8.5, **leg_params)
+        fig.legend(handles=leg_core_loc, ncol=5, bbox_to_anchor=(0.5, 0.14), 
+                   fontsize=14.0, markerscale=1.6, **leg_params)
+        
+        fig.legend(handles=leg_int, ncol=8, bbox_to_anchor=(0.5, 0.08), 
+                   fontsize=14.0, markerscale=1.6, **leg_params)
 
-        plt.subplots_adjust(bottom=0.15, top=0.88)
+        plt.subplots_adjust(bottom=0.22, top=0.90)
+        
         plt.savefig(OUTPUT_IMG, dpi=300, bbox_inches='tight', facecolor=fig.get_facecolor())
         plt.close()
         
