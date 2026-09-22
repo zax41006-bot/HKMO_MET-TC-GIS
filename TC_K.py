@@ -109,7 +109,7 @@ def draw_chart():
         fig.patch.set_facecolor("#FFFFFF")   
         
         # 邊界
-        lon_min, lon_max, lat_min, lat_max = 105.0, 150.0, 5.0, 40.0
+        lon_min, lon_max, lat_min, lat_max = 107.5, 142.5, 10.0, 35.0
         ax.set_extent([lon_min, lon_max, lat_min, lat_max], crs=ccrs.PlateCarree())
 
         # ==================== 2. 地圖美化配色（柔和高質感） ====================
