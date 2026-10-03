@@ -106,6 +106,7 @@
         <select id="tc-selector" onchange="init()">
             <option value="all" selected>所有熱帶氣旋</option>
             <option value="L">彩雲</option>
+            <option value="M">熱帶氣旋</option>
         </select>
     </div>
 </div>
@@ -170,10 +171,11 @@
     </div>
 </div>
 <script>
-const TC_LIST = ['L'];
+const TC_LIST = ['L','M'];
 // 【修正】對齊 HTML 中選單的名稱
 const TC_DISPLAY_NAMES = {
-    'L': '彩雲'
+    'L': '彩雲',
+    'M': '94w'
 };
 const baseLayers = {
     light: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 22, maxNativeZoom: 20, detectRetina: true }),
