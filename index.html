@@ -22,13 +22,8 @@
             font-weight: bold; transition: background 0.3s;
         }
         .img-btn:hover { background: #d35400; }
-        #map-type-selector {
-            position: absolute; top: 60px; right: 10px; z-index: 1005;
-            background: white; border: 1px solid #ccc; padding: 8px; border-radius: 4px;
-            font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); outline: none; width: 130px; font-weight: bold;
-        }
         .weather-layer-selector {
-            position: absolute; top: 105px; right: 10px; z-index: 1005;
+            position: absolute; top: 60px; right: 10px; z-index: 1005;
             background: #3498db; color: white; border: none; padding: 8px; border-radius: 4px;
             font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: pointer;
             font-size: 14px; width: 130px; outline: none;
@@ -73,7 +68,7 @@
         }
         .radar-legend-labels { display: flex; justify-content: space-between; font-size: 10px; color: #666; font-weight: bold; }
         #distance-panel {
-            position: absolute; top: 150px; right: 10px; z-index: 1005;
+            position: absolute; top: 105px; right: 10px; z-index: 1005;
             background: rgba(255, 255, 255, 0.95); padding: 10px 14px;
             border-radius: 6px; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
             font-size: 13px; font-weight: 500; color: #2c3e50;
@@ -95,7 +90,7 @@
             .legend-section { flex-direction: column; align-items: flex-start; gap:4px !important; white-space: normal; }
             .legend-title-inline { border-right: none; padding-right: 0; margin-bottom:2px; }
             .legend-row { font-size:9px; }
-            #distance-panel { top: 140px; font-size: 12px; min-width: 140px; padding: 8px 10px; }
+            #distance-panel { top: 100px; font-size: 12px; min-width: 140px; padding: 8px 10px; }
         }
     </style>
 </head>
@@ -109,11 +104,6 @@
         </select>
     </div>
 </div>
-<select id="map-type-selector" onchange="changeMapType(this.value)">
-    <option value="light">淺色地圖</option>
-    <option value="dark">深色地圖</option>
-    <option value="satellite">衛星地圖</option>
-</select>
 <select id="weather-layer-selector" class="weather-layer-selector" onchange="handleWeatherLayerChange(this.value)">
     <option value="none">純地圖</option>
     <option value="radar">雷達圖像</option>
@@ -175,22 +165,18 @@ const TC_LIST = ['P'];
 const TC_DISPLAY_NAMES = {
     'P': '薔琵'
 };
+// 【修改】只保留衛星地圖
 const baseLayers = {
-    light: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 22, maxNativeZoom: 20, detectRetina: true }),
-    dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 22, maxNativeZoom: 20, detectRetina: true }),
     satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 22, maxNativeZoom: 19 })
 };
-function changeMapType(type) {
-    map.eachLayer(layer => { if(Object.values(baseLayers).includes(layer)) map.removeLayer(layer); })
-    baseLayers[type].addTo(map);
-}
 const intensityColors = { "MD": "#dcdcdc","LPA": "#dcdcdc", "EX": "#707070", "TD": "#eee8aa", "TS": "#3498db", "STS": "#2ecc71", "TY": "#ffa200f6", "STY": "#ff0000", "SUTY": "#9b59b6", "default": "#666" };
 const intensityNames = { "LPA": "低壓區", "TD": "熱帶低氣壓", "TS": "熱帶風暴", "STS": "強烈熱帶風暴", "TY": "颱風", "STY": "強颱風", "SUTY": "超強颱風", "EX": "溫帶氣旋" };
 const MACAO_COORDS = [22.17, 113.55]; 
 const HK_COORDS = [22.3193, 114.1694]; 
 var map = L.map('mapid', { zoomControl: false }).setView([18.0, 135.0], 5);
 L.control.zoom({ position: 'topleft' }).addTo(map);
-baseLayers.light.addTo(map);
+// 【修改】預設載入衛星地圖
+baseLayers.satellite.addTo(map);
 let trackLayer = L.layerGroup().addTo(map);
 let tcDistances = {};
 // 【修正】強化 CSV 解析防呆，避免讀取到 404 網頁或空值造成座標與 Turf 崩潰
