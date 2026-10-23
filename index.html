@@ -53,6 +53,7 @@
     <select id="tc-selector" onchange="init()">
         <option value="all" selected>所有熱帶氣旋</option>
         <option value="P">薔琵</option>
+        <option value="Q">未命名</option>
     </select>
 </div>
 <select id="weather-layer-selector" class="weather-layer-selector" onchange="handleWeatherLayerChange(this.value)">
@@ -110,8 +111,8 @@
     </div>
 </div>
 <script>
-const TC_LIST = ['P'];
-const TC_DISPLAY_NAMES = { 'P': '薔琵' };
+const TC_LIST = ['P','Q'];
+const TC_DISPLAY_NAMES = { 'P': '薔琵' , 'Q': '97w' };
 const baseLayers = {
     amap: L.tileLayer('https://wprd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&style=7&x={x}&y={y}&z={z}', {
         maxZoom: 18,
