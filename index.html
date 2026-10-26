@@ -116,14 +116,74 @@ const TC_DISPLAY_NAMES = { 'P': '薔琵' , 'Q': '煙花' };
 const MACAO_COORDS = [22.17, 113.55];
 const HK_COORDS = [22.3193, 114.1694];
 
-// ==================== 替换为免Key且无偏移的标准XYZ栅格底图 ====================
+// ==================== 坐標轉換工具 (GCJ-02 轉 WGS84) ====================
+const PI = 3.1415926535897932384626;
+const a = 6378245.0;
+const ee = 0.00669342162296594323;
+
+function transformLat(x, y) {
+    let ret = -100.0 + 2.0 * x + 3.0 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
+    ret += (20.0 * Math.sin(6.0 * x * PI) + 20.0 * Math.sin(2.0 * x * PI)) * 2.0 / 3.0;
+    ret += (20.0 * Math.sin(y * PI) + 40.0 * Math.sin(y / 3.0 * PI)) * 2.0 / 3.0;
+    ret += (160.0 * Math.sin(y / 12.0 * PI) + 320 * Math.sin(y * PI / 30.0)) * 2.0 / 3.0;
+    return ret;
+}
+
+function transformLng(x, y) {
+    let ret = 300.0 + x + 2.0 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
+    ret += (20.0 * Math.sin(6.0 * x * PI) + 20.0 * Math.sin(2.0 * x * PI)) * 2.0 / 3.0;
+    ret += (20.0 * Math.sin(x * PI) + 40.0 * Math.sin(x / 3.0 * PI)) * 2.0 / 3.0;
+    ret += (150.0 * Math.sin(x / 12.0 * PI) + 300.0 * Math.sin(x / 30.0 * PI)) * 2.0 / 3.0;
+    return ret;
+}
+
+function outOfChina(lng, lat) {
+    if (lng < 72.004 || lng > 137.8347) return true;
+    if (lat < 0.8293 || lat > 55.8271) return true;
+    return false;
+}
+
+function gcj02towgs84(lng, lat) {
+    if (outOfChina(lng, lat)) return [lng, lat];
+    let dlat = transformLat(lng - 105.0, lat - 35.0);
+    let dlng = transformLng(lng - 105.0, lat - 35.0);
+    let radlat = lat / 180.0 * PI;
+    let magic = Math.sin(radlat);
+    magic = 1 - ee * magic * magic;
+    let sqrtmagic = Math.sqrt(magic);
+    dlat = (dlat * 180.0) / ((a * (1 - ee)) / (magic * sqrtmagic) * PI);
+    dlng = (dlng * 180.0) / (a / sqrtmagic * Math.cos(radlat) * PI);
+    let mglat = lat + dlat;
+    let mglng = lng + dlng;
+    return [lng * 2 - mglng, lat * 2 - mglat];
+}
+
+// 遞歸轉換 GeoJSON 坐標
+function convertGeoJSONToWGS84(geojson) {
+    function processCoords(coords) {
+        if (typeof coords[0] === 'number') {
+            return gcj02towgs84(coords[0], coords[1]);
+        }
+        return coords.map(processCoords);
+    }
+    if (geojson.type === 'FeatureCollection') {
+        geojson.features.forEach(f => {
+            if (f.geometry && f.geometry.coordinates) f.geometry.coordinates = processCoords(f.geometry.coordinates);
+        });
+    } else if (geojson.type === 'Feature') {
+        if (geojson.geometry && geojson.geometry.coordinates) geojson.geometry.coordinates = processCoords(geojson.geometry.coordinates);
+    } else if (geojson.coordinates) {
+        geojson.coordinates = processCoords(geojson.coordinates);
+    }
+    return geojson;
+}
+
+// ==================== 底圖設置 ====================
 const baseLayers = {
-    // 样式一：Esri Light Gray Canvas（浅灰极简，最契合气象数据可视化的中性风格）
     esriGray: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
         maxZoom: 19,
         attribution: '© Esri'
     }),
-    // 样式二：OpenStreetMap HOT（人地版本，界面柔和）
     osmHot: L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
         maxZoom: 19,
         subdomains: 'abc',
@@ -136,8 +196,6 @@ const intensityNames = { "LPA":"低壓區", "TD":"熱帶低氣壓", "TS":"熱帶
 
 var map = L.map('mapid', { zoomControl: false }).setView([18.0, 135.0], 5);
 L.control.zoom({ position: 'topleft' }).addTo(map);
-
-// ==================== 默认加载 Esri 浅灰底图 ====================
 baseLayers.esriGray.addTo(map);
 
 let trackLayer = L.layerGroup().addTo(map);
@@ -267,15 +325,21 @@ async function drawSingleTC(tcId) {
     } catch (e) { tcDistances[tcId] = null; return []; }
 }
 
+// 选择城市后，显示对应距离信息 + 边界线 + 警戒圈
 function updateCityView(value) {
     radiusCircleLayer.clearLayers();
     boundaryLayer.clearLayers();
     const info = document.getElementById('distance-info');
-    if (!value || value === 'none') { info.style.display = 'none'; return; }
+    if (!value || value === 'none') {
+        info.style.display = 'none';
+        return;
+    }
     const isMacau = value === 'macau';
     const center = isMacau ? [MACAO_COORDS[0], MACAO_COORDS[1]] : [HK_COORDS[0], HK_COORDS[1]];
     const baseColor = isMacau ? '#00a86b' : '#e74c3c';
     const cityName = isMacau ? '澳門' : '香港';
+
+    // 显示距离信息
     info.style.display = 'block';
     let html = '';
     let hasData = false;
@@ -288,20 +352,40 @@ function updateCityView(value) {
         }
     });
     info.innerHTML = hasData ? html : '無實時位置';
-    const boundaryUrl = isMacau ? 'https://geo.datav.aliyun.com/areas_v3/bound/820000.json' : 'https://geo.datav.aliyun.com/areas_v3/bound/810000.json';
+
+    // 加载边界线并自动转换为 WGS84
+    const boundaryUrl = isMacau
+        ? 'https://geo.datav.aliyun.com/areas_v3/bound/820000.json'
+        : 'https://geo.datav.aliyun.com/areas_v3/bound/810000.json';
     fetch(boundaryUrl).then(r=>r.json()).then(d=>{
-        L.geoJSON(d, { style: { color: baseColor, weight: 2, fillOpacity: 0 } }).addTo(boundaryLayer);
+        // 將阿里雲的 GCJ-02 邊界轉換為 WGS84
+        const wgs84Data = convertGeoJSONToWGS84(d);
+        L.geoJSON(wgs84Data, { style: { color: baseColor, weight: 2, fillOpacity: 0 } }).addTo(boundaryLayer);
     }).catch(()=>{});
+
+    // 绘制警戒圈 + 距离标签
     const radii = [800, 600, 400, 200, 100];
     radii.forEach(r => {
-        L.circle(center, { radius: r * 1000, color: baseColor, weight: 1.5, dashArray: '6,6', fillColor: baseColor, fillOpacity: 0.04, interactive: false }).addTo(radiusCircleLayer);
+        L.circle(center, {
+            radius: r * 1000,
+            color: baseColor,
+            weight: 1.5,
+            dashArray: '6,6',
+            fillColor: baseColor,
+            fillOpacity: 0.04,
+            interactive: false
+        }).addTo(radiusCircleLayer);
+
         const labelPos = turf.destination(turf.point([center[1], center[0]]), r, 180, {units:'kilometers'});
         const labelLatLng = [labelPos.geometry.coordinates[1], labelPos.geometry.coordinates[0]];
         L.marker(labelLatLng, {
             icon: L.divIcon({
                 html: `<div style="color:${baseColor};font-weight:bold;font-size:10px;white-space:nowrap;background:rgba(255,255,255,0.85);padding:1px 4px;border-radius:3px;border:1px solid ${baseColor};">${r}公里</div>`,
-                className: 'circle-label', iconSize: [50, 16], iconAnchor: [25, 0]
-            }), interactive: false
+                className: 'circle-label',
+                iconSize: [50, 16],
+                iconAnchor: [25, 0]
+            }),
+            interactive: false
         }).addTo(radiusCircleLayer);
     });
 }
@@ -317,8 +401,11 @@ async function init() {
             const points = await drawSingleTC(tcId);
             if (points.length > 0) allBounds = allBounds.concat(points);
         }
+        // 若当前已选择城市，重新刷新显示
         const currentCity = document.getElementById('city-selector').value;
-        if (currentCity && currentCity !== 'none') { updateCityView(currentCity); }
+        if (currentCity && currentCity !== 'none') {
+            updateCityView(currentCity);
+        }
         if (allBounds.length > 0) map.fitBounds(allBounds, { padding: [50, 50] });
     } catch (e) { }
 }
