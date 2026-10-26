@@ -13,7 +13,7 @@
         .header { position:absolute; top:0; left:0; right:0; height:50px; background:var(--accent-color); color:#fff; display:flex; align-items:center; justify-content:space-between; padding:0 20px; z-index:1100; box-shadow:0 2px 5px rgba(0,0,0,0.3); }
         #tc-selector { background:#34495e; color:#fff; border:1px solid #7f8c8d; padding:4px 8px; border-radius:4px; cursor:pointer; }
         .weather-layer-selector { position:absolute; top:60px; right:10px; z-index:1005; background:#3498db; color:#fff; border:none; padding:8px; border-radius:4px; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.2); cursor:pointer; font-size:14px; width:130px; outline:none; }
-        #mapid { position:absolute; top:50px; left:0; bottom:0; right:0; background:#aad3df; }
+        #mapid { position:absolute; top:50px; left:0; bottom:0; right:0; background:#f8f9fa; }
         .leaflet-top.leaflet-left { top:60px; }
         #distance-panel { position:absolute; top:105px; right:10px; z-index:1005; background:rgba(255,255,255,0.95); padding:10px 14px; border-radius:6px; box-shadow:0 2px 10px rgba(0,0,0,0.2); font-size:13px; font-weight:500; color:#2c3e50; min-width:180px; line-height:1.6; border:1px solid #ddd; }
         #distance-panel strong { display:block; border-bottom:2px solid #eee; padding-bottom:5px; margin-bottom:6px; font-size:14px; color:#2c3e50; }
@@ -113,20 +113,33 @@
 <script>
 const TC_LIST = ['P','Q'];
 const TC_DISPLAY_NAMES = { 'P': '薔琵' , 'Q': '煙花' };
-const baseLayers = {
-    amap: L.tileLayer('https://wprd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&style=7&x={x}&y={y}&z={z}', {
-        maxZoom: 18,
-        subdomains: ['1','2','3','4'],
-        attribution: '© 高德地图'
-    })
-};
-const intensityColors = { "MD":"#dcdcdc", "LPA":"#dcdcdc", "EX":"#707070", "TD":"#eee8aa", "TS":"#3498db", "STS":"#2ecc71", "TY":"#ffa200f6", "STY":"#ff0000", "SUTY":"#9b59b6", "default":"#666" };
-const intensityNames = { "LPA":"低壓區", "TD":"熱帶低氣壓", "TS":"熱帶風暴", "STS":"強烈熱帶風暴", "TY":"颱風", "STY":"強颱風", "SUTY":"超強颱風", "EX":"溫帶氣旋" };
 const MACAO_COORDS = [22.17, 113.55];
 const HK_COORDS = [22.3193, 114.1694];
+
+// ==================== 替换为免Key且无偏移的标准XYZ栅格底图 ====================
+const baseLayers = {
+    // 样式一：Esri Light Gray Canvas（浅灰极简，最契合气象数据可视化的中性风格）
+    esriGray: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: '© Esri'
+    }),
+    // 样式二：OpenStreetMap HOT（人地版本，界面柔和）
+    osmHot: L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        subdomains: 'abc',
+        attribution: '© OpenStreetMap contributors, Tiles style by HOT'
+    })
+};
+
+const intensityColors = { "MD":"#dcdcdc", "LPA":"#dcdcdc", "EX":"#707070", "TD":"#eee8aa", "TS":"#3498db", "STS":"#2ecc71", "TY":"#ffa200f6", "STY":"#ff0000", "SUTY":"#9b59b6", "default":"#666" };
+const intensityNames = { "LPA":"低壓區", "TD":"熱帶低氣壓", "TS":"熱帶風暴", "STS":"強烈熱帶風暴", "TY":"颱風", "STY":"強颱風", "SUTY":"超強颱風", "EX":"溫帶氣旋" };
+
 var map = L.map('mapid', { zoomControl: false }).setView([18.0, 135.0], 5);
 L.control.zoom({ position: 'topleft' }).addTo(map);
-baseLayers.amap.addTo(map);
+
+// ==================== 默认加载 Esri 浅灰底图 ====================
+baseLayers.esriGray.addTo(map);
+
 let trackLayer = L.layerGroup().addTo(map);
 let radiusCircleLayer = L.layerGroup().addTo(map);
 let boundaryLayer = L.layerGroup().addTo(map);
@@ -254,21 +267,15 @@ async function drawSingleTC(tcId) {
     } catch (e) { tcDistances[tcId] = null; return []; }
 }
 
-// 选择城市后，显示对应距离信息 + 边界线 + 警戒圈
 function updateCityView(value) {
     radiusCircleLayer.clearLayers();
     boundaryLayer.clearLayers();
     const info = document.getElementById('distance-info');
-    if (!value || value === 'none') {
-        info.style.display = 'none';
-        return;
-    }
+    if (!value || value === 'none') { info.style.display = 'none'; return; }
     const isMacau = value === 'macau';
     const center = isMacau ? [MACAO_COORDS[0], MACAO_COORDS[1]] : [HK_COORDS[0], HK_COORDS[1]];
     const baseColor = isMacau ? '#00a86b' : '#e74c3c';
     const cityName = isMacau ? '澳門' : '香港';
-
-    // 显示距离信息
     info.style.display = 'block';
     let html = '';
     let hasData = false;
@@ -281,38 +288,20 @@ function updateCityView(value) {
         }
     });
     info.innerHTML = hasData ? html : '無實時位置';
-
-    // 加载边界线
-    const boundaryUrl = isMacau
-        ? 'https://geo.datav.aliyun.com/areas_v3/bound/820000.json'
-        : 'https://geo.datav.aliyun.com/areas_v3/bound/810000.json';
+    const boundaryUrl = isMacau ? 'https://geo.datav.aliyun.com/areas_v3/bound/820000.json' : 'https://geo.datav.aliyun.com/areas_v3/bound/810000.json';
     fetch(boundaryUrl).then(r=>r.json()).then(d=>{
         L.geoJSON(d, { style: { color: baseColor, weight: 2, fillOpacity: 0 } }).addTo(boundaryLayer);
     }).catch(()=>{});
-
-    // 绘制警戒圈 + 距离标签
     const radii = [800, 600, 400, 200, 100];
     radii.forEach(r => {
-        L.circle(center, {
-            radius: r * 1000,
-            color: baseColor,
-            weight: 1.5,
-            dashArray: '6,6',
-            fillColor: baseColor,
-            fillOpacity: 0.04,
-            interactive: false
-        }).addTo(radiusCircleLayer);
-
+        L.circle(center, { radius: r * 1000, color: baseColor, weight: 1.5, dashArray: '6,6', fillColor: baseColor, fillOpacity: 0.04, interactive: false }).addTo(radiusCircleLayer);
         const labelPos = turf.destination(turf.point([center[1], center[0]]), r, 180, {units:'kilometers'});
         const labelLatLng = [labelPos.geometry.coordinates[1], labelPos.geometry.coordinates[0]];
         L.marker(labelLatLng, {
             icon: L.divIcon({
                 html: `<div style="color:${baseColor};font-weight:bold;font-size:10px;white-space:nowrap;background:rgba(255,255,255,0.85);padding:1px 4px;border-radius:3px;border:1px solid ${baseColor};">${r}公里</div>`,
-                className: 'circle-label',
-                iconSize: [50, 16],
-                iconAnchor: [25, 0]
-            }),
-            interactive: false
+                className: 'circle-label', iconSize: [50, 16], iconAnchor: [25, 0]
+            }), interactive: false
         }).addTo(radiusCircleLayer);
     });
 }
@@ -328,11 +317,8 @@ async function init() {
             const points = await drawSingleTC(tcId);
             if (points.length > 0) allBounds = allBounds.concat(points);
         }
-        // 若当前已选择城市，重新刷新显示
         const currentCity = document.getElementById('city-selector').value;
-        if (currentCity && currentCity !== 'none') {
-            updateCityView(currentCity);
-        }
+        if (currentCity && currentCity !== 'none') { updateCityView(currentCity); }
         if (allBounds.length > 0) map.fitBounds(allBounds, { padding: [50, 50] });
     } catch (e) { }
 }
