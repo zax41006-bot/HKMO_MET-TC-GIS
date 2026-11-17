@@ -1,0 +1,12 @@
+{
+  "TD": { "name": "熱帶低氣壓", "iconUrl": "./TC-ICON/TC_TD.png", "size": 45 },
+  "TS": { "name": "熱帶風暴", "iconUrl": "./TC-ICON/TC_TS.png", "size": 45 },
+  "STS": { "name": "強烈熱帶風暴", "iconUrl": "./TC-ICON/TC_STS.png", "size": 45 },
+  "TY": { "name": "颱風", "iconUrl": "./TC-ICON/TC_TY.png", "size": 45 },
+  "STY": { "name": "強颱風", "iconUrl": "./TC-ICON/TC_STY.png", "size": 45 },
+  "SUTY": { "name": "超強颱風", "iconUrl": "./TC-ICON/TC_SUTY.png", "size": 45 },
+  "LPA": { "name": "低壓區", "iconUrl": "./TC-ICON/TC_LPA.png", "size": 45 },
+  "MD": { "name": "低壓區", "iconUrl": "./TC-ICON/TC_LPA.png", "size": 45 },
+  "EX": { "name": "溫帶氣旋", "iconUrl": "./TC-ICON/TC_LPA.png", "size": 45 },
+  "default": { "name": "未知", "iconUrl": "./TC-ICON/TC_LPA.png", "size": 45 }
+}
