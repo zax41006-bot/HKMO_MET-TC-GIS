@@ -156,7 +156,6 @@
         <div class="legend-section">
             <span class="legend-title-inline">路徑圖例</span>
             <div class="legend-row"><div class="dot" style="background:#fff; border: 2.5px solid #000; width:10px; height:10px;"></div> <b>實時位置</b></div>
-            <!-- 過去路徑改為黑色線條 -->
             <div class="legend-row"><div class="line" style="background: #000000;"></div> 過去路徑</div>
             <div class="legend-row"><div class="line" style="border-top: 3px dashed #3498db;"></div> 預報路徑</div>
             <div class="legend-row"><div class="box"></div> 70% 誤差帶</div>
@@ -176,14 +175,15 @@
 </div>
 
 <script>
-// 全局變數
+// ================= 全局變數 =================
 let TC_LIST = [];
 let TC_DISPLAY_NAMES = {};
+let tcIcons = {}; // 將由 intensity_config.json 動態填充
 
 // 遠端 TC-Track 數據源基礎路徑
 const TC_TRACK_BASE_URL = 'https://raw.githubusercontent.com/zax41006-bot/TC-Track/main';
 
-// ==================== 坐標轉換工具 (GCJ-02 轉 WGS84) ====================
+// ==================== 坐標轉換工具 ====================
 const PI = 3.1415926535897932384626;
 const a = 6378245.0;
 const ee = 0.00669342162296594323;
@@ -199,20 +199,6 @@ function convertGeoJSONToWGS84(geojson) {
     return geojson;
 }
 // ======================================================================
-
-// 🌟 放大圖標：從 30x30 改為 45x45
-const tcIcons = {
-    'TD': L.icon({ iconUrl: './TC-ICON/TC_TD.png', iconSize: [45, 45], iconAnchor: [22.5, 22.5], popupAnchor: [0, -22.5] }),
-    'TS': L.icon({ iconUrl: './TC-ICON/TC_TS.png', iconSize: [45, 45], iconAnchor: [22.5, 22.5], popupAnchor: [0, -22.5] }),
-    'STS': L.icon({ iconUrl: './TC-ICON/TC_STS.png', iconSize: [45, 45], iconAnchor: [22.5, 22.5], popupAnchor: [0, -22.5] }),
-    'TY': L.icon({ iconUrl: './TC-ICON/TC_TY.png', iconSize: [45, 45], iconAnchor: [22.5, 22.5], popupAnchor: [0, -22.5] }),
-    'STY': L.icon({ iconUrl: './TC-ICON/TC_STY.png', iconSize: [45, 45], iconAnchor: [22.5, 22.5], popupAnchor: [0, -22.5] }),
-    'SUTY': L.icon({ iconUrl: './TC-ICON/TC_SUTY.png', iconSize: [45, 45], iconAnchor: [22.5, 22.5], popupAnchor: [0, -22.5] }),
-    'LPA': L.icon({ iconUrl: './TC-ICON/TC_LPA.png', iconSize: [45, 45], iconAnchor: [22.5, 22.5], popupAnchor: [0, -22.5] }),
-    'MD': L.icon({ iconUrl: './TC-ICON/TC_LPA.png', iconSize: [45, 45], iconAnchor: [22.5, 22.5], popupAnchor: [0, -22.5] }),
-    'EX': L.icon({ iconUrl: './TC-ICON/TC_LPA.png', iconSize: [45, 45], iconAnchor: [22.5, 22.5], popupAnchor: [0, -22.5] }),
-    'default': L.icon({ iconUrl: './TC-ICON/TC_LPA.png', iconSize: [45, 45], iconAnchor: [22.5, 22.5], popupAnchor: [0, -22.5] })
-};
 
 const baseLayers = {
     esriGray: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: '© Esri' })
@@ -233,6 +219,32 @@ let boundaryLayer = L.layerGroup().addTo(map);
 
 let tcDistances = {};
 
+// ================= 核心：載入強度與圖標配置 =================
+async function loadIntensityConfig() {
+    try {
+        const res = await fetch('./intensity_config.json?t=' + new Date().getTime());
+        if (!res.ok) throw new Error('找不到 intensity_config.json');
+        const config = await res.json();
+        
+        // 根據 JSON 動態生成 Leaflet 的圖標對象
+        for (const key in config) {
+            const item = config[key];
+            tcIcons[key] = L.icon({
+                iconUrl: item.iconUrl,
+                iconSize: [item.size, item.size],
+                iconAnchor: [item.size / 2, item.size / 2],
+                popupAnchor: [0, -item.size / 2]
+            });
+        }
+        console.log('強度與圖標配置載入成功');
+    } catch (e) {
+        console.error('載入 intensity_config.json 失敗，將使用硬編碼的預設值', e);
+        // 如果 JSON 失敗，給予一個最基本的預設防崩潰
+        tcIcons['default'] = L.icon({ iconUrl: './TC-ICON/TC_LPA.png', iconSize: [45, 45], iconAnchor: [22.5, 22.5] });
+    }
+}
+
+// ================= 資料繪圖與解析 =================
 function parseCSV(text) {
     if (!text || text.includes("<html") || text.includes("404: Not Found")) return [];
     const lines = text.trim().split('\n');
@@ -356,7 +368,7 @@ async function drawSingleTC(tcId) {
             L.geoJSON(combined, { style: { color: '#e67e22', weight: 1, dashArray: '5,5', fillColor: '#f1c40f', fillOpacity: 0.12 } }).addTo(trackLayer);
         }
 
-        // 🌟 過去路徑改為黑色 (#000000)
+        // 過去路徑：黑色
         L.polyline(pastData.map(d => [d.lat, d.lng]), { color: '#000000', weight: 4 }).addTo(trackLayer);
 
         let fPath = [[latestPoint.lat, latestPoint.lng]];
@@ -365,19 +377,25 @@ async function drawSingleTC(tcId) {
 
         // 過去點
         pastData.slice(0, -1).forEach(d => {
-            const icon = tcIcons[d.intensity] || tcIcons.default;
+            const icon = tcIcons[d.intensity] || tcIcons['default'];
             L.marker([d.lat, d.lng], { icon: icon, opacity: 0.8 }).addTo(trackLayer).bindPopup(createPopupContent(d, 'past'));
         });
 
-        // 🌟 實時點 (更加放大: 60x60)
-        const currentIcon = tcIcons[latestPoint.intensity] || tcIcons.default;
-        const biggerIcon = L.icon({ iconUrl: currentIcon.options.iconUrl, iconSize: [60, 60], iconAnchor: [30, 30], popupAnchor: [0, -30] });
+        // 實時點 (特別放大 60x60)
+        const currentIcon = tcIcons[latestPoint.intensity] || tcIcons['default'];
+        const biggerSize = 60;
+        const biggerIcon = L.icon({ 
+            iconUrl: currentIcon.options.iconUrl, 
+            iconSize: [biggerSize, biggerSize], 
+            iconAnchor: [biggerSize / 2, biggerSize / 2], 
+            popupAnchor: [0, -biggerSize / 2] 
+        });
         L.marker([latestPoint.lat, latestPoint.lng], { icon: biggerIcon, zIndexOffset: 1000 }).addTo(trackLayer).bindPopup(createPopupContent(latestPoint, 'current'));
 
         // 預報點
         forecastData.forEach(d => {
             if (!visibleHours.has(Number(d.f_time))) return;
-            const icon = tcIcons[d.intensity] || tcIcons.default;
+            const icon = tcIcons[d.intensity] || tcIcons['default'];
             L.marker([d.lat, d.lng], { icon: icon, opacity: 0.85 }).addTo(trackLayer).bindPopup(createPopupContent(d, 'forecast', baseTimeStr));
         });
 
@@ -444,6 +462,10 @@ async function init() {
 }
 
 async function loadConfigAndInit() {
+    // 1. 先讀取強度圖標配置
+    await loadIntensityConfig();
+
+    // 2. 再讀取氣旋清單
     try {
         const res = await fetch('./tc_config.json?t=' + new Date().getTime());
         if (res.ok) {
@@ -462,6 +484,8 @@ async function loadConfigAndInit() {
             }
         }
     } catch (e) { console.error('讀取 tc_config.json 失敗', e); }
+    
+    // 3. 開始繪圖
     init();
 }
 
